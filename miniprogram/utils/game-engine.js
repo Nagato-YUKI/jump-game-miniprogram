@@ -628,113 +628,118 @@ class GameEngine {
   /**
    * 渲染教程界面
    */
+  // ========== 教程渲染（Phase 6: 完整9种道具说明 + 缩小道具图标） ==========
   renderTutorial(ctx) {
     var w = this.screenWidth;
     var h = this.screenHeight;
 
-    // 半透明深色遮罩（与暂停菜单一致）
     ctx.fillStyle = 'rgba(30, 40, 50, 0.75)';
     ctx.fillRect(0, 0, w, h);
 
-    // 中央毛玻璃面板
-    var pw = 300, ph = 380;
+    var isItemPage = (this.tutorialStep === 2 || this.tutorialStep === 3);
+    var ph = isItemPage ? 480 : 360;
+    var pw = 310;
     var px = (w - pw) / 2;
     var py = (h - ph) / 2;
 
-    // 面板背景：半透明白色毛玻璃
     ctx.save();
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.94)';
     this._roundRect(ctx, px, py, pw, ph, 18);
     ctx.fill();
-
-    // 面板阴影
     ctx.shadowColor = 'rgba(0, 0, 0, 0.12)';
     ctx.shadowBlur = 25;
     ctx.shadowOffsetY = 8;
     ctx.fill();
     ctx.restore();
 
-    // 教程步骤内容（图标化描述）
     var steps = [
       { title: '\u6B22\u8FCE\u6765\u5230\u8DF3\u8DC3\u95EF\u5171!', desc: [
-        { icon: '\u2605', text: '\u7B80\u5355\u6613\u4E0A\u624B\u7684\u8DF3\u8DC3\u6E38\u620F' },
-        { icon: '\u25B6', text: '\u89D2\u8272\u4F1A\u81EA\u52A8\u8DF3\u8DC3' },
-        { icon: '\u270B', text: '\u63A7\u5236\u5DE6\u53F3\u65B9\u5411\u5373\u53EF' },
+        { icon: '\u2605', text: '\u7B80\u5355\u6613\u4E0A\u624B\u7684\u7AD6\u5C4F\u8DF3\u8DC3\u6E38\u620F' },
+        { icon: '\u25B6', text: '\u89D2\u8272\u4F1A\u81EA\u52A8\u5728\u5E73\u53F0\u4E0A\u8DF3\u8DC3' },
+        { icon: '\u2764', text: '\u51736\u6761\u547D\uFF0C\u7528\u5B8C\u5373\u6E38\u620F\u7ED3\u675F' },
       ], btn: '\u4E0B\u4E00\u6B65 \u25B6' },
       { title: '\u64CD\u4F5C\u65B9\u5F0F', desc: [
         { icon: '\u25C0', text: '\u6309\u4F4F\u5C4F\u5E55\u5DE6\u4FA7 \u2192 \u5411\u5DE6\u79FB\u52A8' },
         { icon: '\u25B6', text: '\u6309\u4F4F\u5C4F\u5E53\u53F3\u4FA7 \u2192 \u5411\u53F3\u79FB\u52A8' },
-        { icon: '\u270A', text: '\u677E\u5F00\u624B\u6307 \u2192 \u7F13\u6162\u505C\u6B62' },
+        { icon: '\u270A', text: '\u677E\u5F00\u624B\u6307 \u2192 \u60EF\u6027\u51CF\u901F\u505C\u6B62' },
+        { icon: '\u23F8', text: '\u70B9\u51FB\u9876\u90E8\u6682\u505C\u94AE \u2192 \u6682\u505C\u6E38\u620F' },
       ], btn: '\u6211\u5B66\u4F1A\u4E86!' },
-      { title: '\u9053\u5177\u8BF4\u660E', desc: [
-        { icon: '\uD83D\uDFE0', color: '#FFD700', text: '\u91D1\u5E01 \u2014 \u6536\u96C6\u5F97\u5206' },
-        { icon: '\uD83D\uDEE1', color: '#4ECDC4', text: '\u62A4\u76FE \u2014 \u514D\u6B7B\u4E00\u6B21' },
-        { icon: '\u2191\u2191', color: '#FF8C00', text: '\u5F39\u7C27\u5E73\u53F0 \u2014 \u8DF3\u5F97\u66F4\u9AD8' },
-        { icon: '\u26A0\uFE0F', color: '#E74C3C', text: '\u6613\u788E\u5E73\u53F0 \u2014 \u5C0F\u5FC3\u8E29\u788E' },
+      { title: '\u9053\u5177\u8BF4\u660E (1/2)', desc: [
+        { itemType: 'coin', color: '#FFD700', text: '\u91D1\u5E01 \u2014 \u6536\u96C6\u5F97+5\u91D1\u5E01+\u5206' },
+        { itemType: 'shield', color: '#4ECDC4', text: '\u62A4\u76FE \u2014 \u514D\u6B7B\u4E00\u6B21' },
+        { itemType: 'spring_shoe', color: '#FF8C00', text: '\u5F39\u7C27\u978B \u2014 \u8DF3\u8DC3\u529B\u589E\u5F3A5\u79D2' },
+        { itemType: 'magnet', color: '#E74C3C', text: '\u78C1\u94C1 \u2014 \u81EA\u52A8\u5438\u5F15\u91D1\u5E018\u79D2' },
+        { itemType: 'cloud', color: '#FFE4E1', text: '\u51CF\u901F\u4E91 \u2014 \u964D\u4F4E\u91CD\u529B3\u79D2' },
+      ], btn: '\u67E5\u770B\u66F4\u591A \u25B6' },
+      { title: '\u9053\u5177\u8BF4\u660E (2/2)', desc: [
+        { itemType: 'jetpack', color: '#FF4500', text: '\u55B7\u6C14\u80CC\u5305 \u2014 \u5411\u4E0A\u98DE\u884C3\u79D2' },
+        { itemType: 'double_score', color: '#FFD700', text: '\u53CC\u500D\u5F97\u5206 \u2014 10\u79D2\u5185\u5F97\u5206\u7FFB\u500D' },
+        { itemType: 'invincible', color: '#FF69B4', text: '\u65E0\u654C\u661F \u2014 5\u79D2\u5168\u65E0\u654C' },
+        { itemType: 'diamond', color: '#9B59B6', text: '\u94BB\u77F3\u5B9D\u77F3 \u2014 \u5373\u65F6+200\u5206' },
       ], btn: '\u5F00\u59CB\u6E38\u620F!' },
     ];
 
     var step = steps[this.tutorialStep] || steps[0];
 
-    // 标题
     ctx.fillStyle = '#2D3436';
-    ctx.font = 'bold 22px sans-serif';
+    ctx.font = 'bold 21px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(step.title, w / 2, py + 45);
+    ctx.fillText(step.title, w / 2, py + 42);
 
-    // 分隔线
     ctx.strokeStyle = 'rgba(0, 0, 0, 0.06)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(px + 28, py + 72);
-    ctx.lineTo(px + pw - 28, py + 72);
+    ctx.moveTo(px + 24, py + 68);
+    ctx.lineTo(px + pw - 24, py + 68);
     ctx.stroke();
 
-    // 描述列表（图标+文字，带背景条）
-    var lineH = 44;
-    var listStartY = py + 92;
+    var lineH = isItemPage ? 48 : 42;
+    var listStartY = py + 86;
     for (var li = 0; li < step.desc.length; li++) {
       var entry = step.desc[li];
       var ly = listStartY + li * lineH;
 
-      // 每行浅色背景条
       ctx.save();
-      ctx.fillStyle = 'rgba(78, 205, 196, 0.06)';
-      this._roundRect(ctx, px + 20, ly - 14, pw - 40, 36, 10);
+      ctx.fillStyle = 'rgba(78, 205, 196, 0.05)';
+      this._roundRect(ctx, px + 18, ly - 15, pw - 36, isItemPage ? 40 : 34, 10);
       ctx.fill();
       ctx.restore();
 
-      // 图标
-      ctx.font = 'bold 18px sans-serif';
+      if (entry.itemType) {
+        this._renderTutorialItemIcon(ctx, px + 32, ly + 3, 26, entry.itemType);
+      } else {
+        ctx.font = 'bold 17px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = entry.color || '#4ECDC4';
+        ctx.fillText(entry.icon, px + 32, ly + 3);
+      }
+
+      ctx.fillStyle = '#333333';
+      ctx.font = isItemPage ? '14px sans-serif' : '14px sans-serif';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillStyle = entry.color || '#4ECDC4';
-      ctx.fillText(entry.icon, px + 32, ly + 4);
-
-      // 文字
-      ctx.fillStyle = '#333333';
-      ctx.font = '15px sans-serif';
-      ctx.fillText(entry.text, px + 60, ly + 4);
+      ctx.fillText(entry.text, px + 64, ly + 3);
     }
 
-    // 步骤指示器（小圆点）
     var dotCX = w / 2;
-    var dotCY = py + ph - 95;
+    var dotCY = py + ph - (isItemPage ? 100 : 82);
     for (var di = 0; di < steps.length; di++) {
       ctx.beginPath();
-      ctx.arc(dotCX + (di - 1) * 20, dotCY, 5, 0, Math.PI * 2);
-      if (di === this.tutorialStep) {
-        ctx.fillStyle = '#4ECDC4';
-      } else {
-        ctx.fillStyle = 'rgba(180, 190, 200, 0.45)';
-      }
+      ctx.arc(dotCX + (di - 1.5) * 18, dotCY, 5, 0, Math.PI * 2);
+      ctx.fillStyle = di === this.tutorialStep ? '#4ECDC4' : 'rgba(180, 190, 200, 0.4)';
       ctx.fill();
     }
 
-    // 主按钮（与开始页按钮一致的风格）
-    var btnY = py + ph - 62;
-    var btnH = 46;
+    ctx.fillStyle = 'rgba(180, 190, 200, 0.5)';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('\u8DF3\u8FC7', px + pw - 16, py + 22);
+
+    var btnY = py + ph - (isItemPage ? 68 : 56);
+    var btnH = 44;
     ctx.save();
     var grad = ctx.createLinearGradient(px + 35, btnY, px + pw - 35, btnY + btnH);
     grad.addColorStop(0, '#4ECDC4');
@@ -742,27 +747,117 @@ class GameEngine {
     ctx.fillStyle = grad;
     this._roundRect(ctx, px + 35, btnY, pw - 70, btnH, 14);
     ctx.fill();
-
-    // 按钮阴影
     ctx.shadowColor = 'rgba(78, 205, 196, 0.35)';
     ctx.shadowBlur = 12;
     ctx.shadowOffsetY = 4;
     ctx.fill();
     ctx.restore();
 
-    // 按钮文字
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 16px sans-serif';
+    ctx.font = 'bold 15px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(step.btn, w / 2, btnY + btnH / 2);
 
-    // "跳过教程"链接（右上角）
-    ctx.fillStyle = '#888888';
-    ctx.font = '12px sans-serif';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'top';
-    ctx.fillText('\u8DF3\u8FC7\u6559\u7A0B \u00BB', px + pw - 15, py + 14);  // 跳过教程 »
+    this.buttons.tutorialNext = { x: px + 35, y: btnY, w: pw - 70, h: btnH };
+    this.buttons.tutorialSkip = { x: px + pw - 45, y: py + 10, w: 50, h: 28 };
+  }
+
+  /**
+   * 绘制教程中的缩小版道具图标（与游戏内渲染风格一致）
+   */
+  _renderTutorialItemIcon(ctx, cx, cy, size, itemType) {
+    var s = size;
+    var half = s / 2;
+    ctx.save();
+
+    switch (itemType) {
+      case 'coin':
+        ctx.fillStyle = '#FFD700';
+        ctx.beginPath(); ctx.arc(cx, cy, half - 1, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#B8860B'; ctx.font = 'bold ' + Math.round(s * 0.55) + 'px sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('$', cx, cy);
+        break;
+
+      case 'shield':
+        ctx.fillStyle = '#4ECDC4';
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - half); ctx.lineTo(cx + half, cy - half * 0.3);
+        ctx.lineTo(cx + half * 0.85, cy + half); ctx.lineTo(cx, cy + half * 0.8);
+        ctx.lineTo(cx - half * 0.85, cy + half); ctx.lineTo(cx - half, cy - half * 0.3);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#FFF'; ctx.font = 'bold ' + Math.round(s * 0.45) + 'px sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('S', cx, cy);
+        break;
+
+      case 'spring_shoe':
+        ctx.fillStyle = '#FF8C00';
+        this._roundRect(ctx, cx - half * 0.8, cy - half * 0.2, s * 0.8, s * 0.65, 3); ctx.fill();
+        ctx.strokeStyle = '#CC7000'; ctx.lineWidth = 1.5;
+        for (var si = 0; si < 3; si++) {
+          ctx.beginPath(); ctx.moveTo(cx - half * 0.4 + si * s * 0.25, cy + half * 0.5);
+          ctx.lineTo(cx - half * 0.28 + si * s * 0.25, cy); ctx.stroke();
+        }
+        break;
+
+      case 'magnet':
+        ctx.fillStyle = '#E74C3C';
+        this._roundRect(ctx, cx - half, cy - half * 0.6, s * 0.38, s * 0.75, 2); ctx.fill();
+        this._roundRect(ctx, cx + half * 0.27, cy - half * 0.6, s * 0.38, s * 0.75, 2); ctx.fill();
+        this._roundRect(ctx, cx - half * 0.6, cy + half * 0.05, s * 1.2, s * 0.3, 2); ctx.fill();
+        break;
+
+      case 'cloud':
+        ctx.fillStyle = '#FFE4E1';
+        ctx.beginPath(); ctx.arc(cx - s * 0.18, cy + s * 0.12, s * 0.32, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx, cy, s * 0.38, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx + s * 0.18, cy + s * 0.12, s * 0.32, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#999'; ctx.font = Math.round(s * 0.38) + 'px sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('\u6162', cx, cy);
+        break;
+
+      case 'jetpack':
+        ctx.fillStyle = '#FF4500';
+        this._roundRect(ctx, cx - half * 0.7, cy - half * 0.7, s * 0.65, s * 0.65, 3); ctx.fill();
+        ctx.fillStyle = '#FF6600';
+        ctx.beginPath(); ctx.moveTo(cx - half * 0.4, cy + half * 0.1);
+        ctx.lineTo(cx + half * 0.4, cy + half * 0.1); ctx.lineTo(cx, cy + half * 0.9); ctx.closePath(); ctx.fill();
+        break;
+
+      case 'double_score':
+        ctx.fillStyle = '#FFD700';
+        ctx.beginPath(); ctx.arc(cx, cy, half - 1, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#DAA520'; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.fillStyle = '#B8860B'; ctx.font = 'bold ' + Math.round(s * 0.42) + 'px sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('x2', cx, cy);
+        break;
+
+      case 'invincible':
+        ctx.fillStyle = '#FF69B4';
+        ctx.save(); ctx.translate(cx, cy);
+        ctx.beginPath();
+        for (var ii = 0; ii < 5; ii++) {
+          var oa = (ii * 72 - 90) * Math.PI / 180;
+          var ia = ((ii * 72) + 36 - 90) * Math.PI / 180;
+          var or = half, ir = half * 0.45;
+          if (ii === 0) ctx.moveTo(Math.cos(oa) * or, Math.sin(oa) * or);
+          else ctx.lineTo(Math.cos(oa) * or, Math.sin(oa) * or);
+          ctx.lineTo(Math.cos(ia) * ir, Math.sin(ia) * ir);
+        }
+        ctx.closePath(); ctx.fill(); ctx.restore();
+        break;
+
+      case 'diamond':
+        ctx.save(); ctx.translate(cx, cy); ctx.rotate(Math.PI / 4);
+        ctx.fillStyle = '#9B59B6';
+        this._roundRect(ctx, -s * 0.32, -s * 0.32, s * 0.64, s * 0.64, 3); ctx.fill();
+        ctx.strokeStyle = '#C39BD3'; ctx.lineWidth = 1.2; ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.beginPath(); ctx.arc(-s * 0.1, -s * 0.1, s * 0.12, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+        break;
+    }
+    ctx.restore();
   }
 
   /**
@@ -772,22 +867,18 @@ class GameEngine {
   handleTutorialTouch(x, y) {
     var w = this.screenWidth;
     var h = this.screenHeight;
-    var pw = 280, ph = 360;
+    var isItemPage = (this.tutorialStep === 2 || this.tutorialStep === 3);
+    var pw = 310, ph = isItemPage ? 480 : 360;
     var px = (w - pw) / 2;
     var py = (h - ph) / 2;
 
     // 检测主按钮点击（"下一步"/"开始游戏"）
-    var btnY = py + ph - 65;
+    var btnY = py + ph - (isItemPage ? 68 : 56);
     var btnH = 44;
-    if (x >= px + 40 && x <= px + pw - 40 && y >= btnY && y <= btnY + btnH) {
+    if (x >= px + 35 && x <= px + pw - 35 && y >= btnY && y <= btnY + btnH) {
       this.tutorialStep++;
-      if (this.tutorialStep >= 3) {
-        // 教程完成
-        try {
-          wx.setStorageSync('hasCompletedTutorial', true);
-        } catch(e) {
-          console.warn('[GameEngine] 教程完成存储失败', e);
-        }
+      if (this.tutorialStep >= 4) {
+        try { wx.setStorageSync('hasCompletedTutorial', true); } catch(e) {}
         this.showTutorial = false;
         this.state = GAME_STATE.IDLE;
         return 'tutorialComplete';
@@ -796,12 +887,8 @@ class GameEngine {
     }
 
     // 检测"跳过教程"
-    if (x >= px + pw - 60 && x <= px + pw - 10 && y >= py + 10 && y <= py + 30) {
-      try {
-        wx.setStorageSync('hasCompletedTutorial', true);
-      } catch(e) {
-        console.warn('[GameEngine] 跳过教程存储失败', e);
-      }
+    if (x >= px + pw - 45 && x <= px + pw + 5 && y >= py + 10 && y <= py + 38) {
+      try { wx.setStorageSync('hasCompletedTutorial', true); } catch(e) {}
       this.showTutorial = false;
       this.state = GAME_STATE.IDLE;
       return 'tutorialSkip';
@@ -1586,9 +1673,34 @@ class GameEngine {
       }
     }
 
-    // 第3次及以后：正常走gameOver流程
-    this.audioManager.playSound(AudioManager.SOUNDS.HURT);
-    this.gameOver();
+    // 第3次及以后：直接进入结束状态（不再走gameOver的重复生命检查）
+    this.state = GAME_STATE.OVER;
+
+    // 保存本局金币到累计余额（商店系统）
+    this.totalCoinsEarned += this.coins;
+    this._saveTotalCoins();
+    this.scoreManager.updateBestScore(this.score);
+
+    // 死亡爆炸粒子 + 强屏幕震动
+    this._emitParticles(this.player.x + this.player.width / 2, this.player.y + this.player.height / 2, {
+      count: 35, type: 'death', speed: 150, life: 1.0, size: 14
+    });
+    this.triggerScreenShake(10, 500);
+
+    // 停止BGM + 播放结束音效
+    this.audioManager.stopBGM();
+    var bestScore = this.scoreManager.getBestScore();
+    if (this.score >= bestScore && this.score > 0) {
+      this.audioManager.playSound(AudioManager.SOUNDS.NEW_RECORD);
+    } else {
+      this.audioManager.playSound(AudioManager.SOUNDS.GAME_OVER);
+    }
+
+    // 结束弹窗淡入动画初始化
+    this.transitionAlpha = 0;
+    this._initScoreRoll(this.score);
+    if (this.onGameOver) this.onGameOver(this.score, this.scoreManager.getBestScore());
+    this.render();
   }
 
   /**
