@@ -113,9 +113,11 @@ var IMAGE_CONFIGS = {
   icon_pause:    { cloud: CLOUD_BASE_URL + 'images/ui/icon_pause.png',     local: '/images/ui/icon_pause.png' },
 
   // 特效
-  particle_star:  { cloud: CLOUD_BASE_URL + 'images/effects/particle_star.png',  local: '/images/effects/particle_star.png' },
-  effect_spring:  { cloud: CLOUD_BASE_URL + 'images/effects/effect_spring.png',  local: '/images/effects/effect_spring.png' },
-  effect_break:   { cloud: CLOUD_BASE_URL + 'images/effects/effect_break.png',   local: '/images/effects/effect_break.png' },
+  particle_star:       { cloud: CLOUD_BASE_URL + 'images/effects/particle_star.png',        local: '/images/effects/particle_star.png' },
+  effect_spring:       { cloud: CLOUD_BASE_URL + 'images/effects/effect_spring.png',        local: '/images/effects/effect_spring.png' },
+  effect_break:        { cloud: CLOUD_BASE_URL + 'images/effects/effect_break.png',         local: '/images/effects/effect_break.png' },
+  effect_shield_break: { cloud: CLOUD_BASE_URL + 'images/effects/effect_shield_break.png',  local: '/images/effects/effect_shield_break.png' },
+  effect_coin_collect: { cloud: CLOUD_BASE_URL + 'images/effects/effect_coin_collect.png',  local: '/images/effects/effect_coin_collect.png' },
 
   // 道具
   item_coin:       { cloud: CLOUD_BASE_URL + 'images/items/item_coin.png',        local: '/images/items/item_coin.png' },
@@ -123,6 +125,10 @@ var IMAGE_CONFIGS = {
   item_spring_shoe:{ cloud: CLOUD_BASE_URL + 'images/items/item_spring_shoe.png', local: '/images/items/item_spring_shoe.png' },
   item_magnet:     { cloud: CLOUD_BASE_URL + 'images/items/item_magnet.png',      local: '/images/items/item_magnet.png' },
   item_cloud:      { cloud: CLOUD_BASE_URL + 'images/items/item_cloud.png',       local: '/images/items/item_cloud.png' },
+
+  // HUD图标
+  icon_coin_hud:   { cloud: CLOUD_BASE_URL + 'images/ui/icon_coin_hud.png',     local: '/images/ui/icon_coin_hud.png' },
+  icon_life:       { cloud: CLOUD_BASE_URL + 'images/ui/icon_life.png',         local: '/images/ui/icon_life.png' },
 };
 
 // ==================== 工具方法 ====================
