@@ -44,7 +44,7 @@ function ItemManager(screenWidth, screenHeight) {
 ItemManager.prototype.spawnOnPlatform = function(platform, level) {
   // 根据关卡调整道具生成概率
   var rand = Math.random();
-  var threshold = Math.min(0.15 + level * 0.02, 0.45);
+  var threshold = Math.min(0.25 + level * 0.03, 0.50);
 
   if (rand > threshold) return null; // 不生成道具
 
@@ -139,8 +139,9 @@ ItemManager.prototype.checkCollision = function(player) {
     var ix = item.x, iy = item.y + item.bobOffset; // 加上浮动偏移
     var iw = item.width, ih = item.height;
 
-    // AABB 碰撞检测（稍微放大判定范围让收集更容易）
-    if (px < ix + iw && px + pw > ix && py < iy + ih && py + ph > iy) {
+    // AABB 碰撞检测（放大判定范围让收集更容易）
+    var padding = item.type === 'coin' ? 8 : 4; // 金币额外宽容8px
+    if (px < ix + iw + padding && px + pw > ix - padding && py < iy + ih + padding && py + ph > iy - padding) {
       item.collected = true;
       collectedType = item.type;
 

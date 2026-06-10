@@ -704,7 +704,7 @@ class GameEngine {
     ctx.fillText(step.btn, w / 2, btnY + btnH / 2);
 
     // "跳过教程"链接（右上角）
-    ctx.fillStyle = '#999999';
+    ctx.fillStyle = '#777777';
     ctx.font = '13px sans-serif';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'top';
@@ -937,9 +937,7 @@ class GameEngine {
     }
 
     // 更新道具系统（Phase 3: 道具系统）
-    this.itemManager.update(this.cameraY, this.player);
-    // 检测道具碰撞
-    var collectedItem = this.itemManager.checkCollision(this.player);
+    var collectedItem = this.itemManager.update(this.cameraY, this.player);
     if (collectedItem) {
       this.handleItemCollect(collectedItem);
     }
@@ -2234,7 +2232,7 @@ class GameEngine {
 
     // 提示文字轮播
     var tips = ['准备资源...', '加载图形...', '即将完成...'];
-    ctx.fillStyle = '#999999';
+    ctx.fillStyle = '#777777';
     ctx.font = '13px sans-serif';
     ctx.textBaseline = 'middle';
     ctx.fillText(tips[anim.loadTipIndex], w / 2, panelY + 115);
@@ -2295,7 +2293,7 @@ class GameEngine {
 
     // ========== 副标题区域 ==========
     var subtitleY = titleAreaTop + titleAreaHeight + 20;
-    ctx.fillStyle = '#888888';
+    ctx.fillStyle = '#555555';
     ctx.font = '14px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -2303,7 +2301,7 @@ class GameEngine {
 
     // 操作指引：增大到14px，带图标
     var guideY = subtitleY + 26;
-    ctx.fillStyle = '#666666';
+    ctx.fillStyle = '#444444';
     ctx.font = '14px sans-serif';
     ctx.fillText('\u25C0  \uD83D\uDC4A  \u25B6', w / 2, guideY);  // ◀ 🖐️ ►
 
@@ -2341,7 +2339,7 @@ class GameEngine {
     var bottomY = h - 40;
 
     // 版本号
-    ctx.fillStyle = 'rgba(102,102,102,0.7)';
+    ctx.fillStyle = 'rgba(70,70,70,0.9)';
     ctx.font = '11px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -2452,7 +2450,7 @@ class GameEngine {
     var scoreX = 75;
 
     // 标签
-    ctx.fillStyle = '#999999';
+    ctx.fillStyle = '#777777';
     ctx.font = '11px sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
@@ -2479,7 +2477,7 @@ class GameEngine {
     }
 
     // 标签
-    ctx.fillStyle = '#999999';
+    ctx.fillStyle = '#777777';
     ctx.font = '11px sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
@@ -2618,7 +2616,7 @@ class GameEngine {
     ctx.lineWidth = 1.5;
     this._roundRect(ctx, restartBtn.x, restartBtn.y, restartBtn.w, restartBtn.h, 12);
     ctx.stroke();
-    ctx.fillStyle = '#666666';
+    ctx.fillStyle = '#444444';
     ctx.font = '16px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -2652,7 +2650,7 @@ class GameEngine {
     var sliderStartX = volumeLabelX;
 
     // 区域标题
-    ctx.fillStyle = '#666666';
+    ctx.fillStyle = '#444444';
     ctx.font = 'bold 14px sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
@@ -2783,7 +2781,7 @@ class GameEngine {
     var displayScore = isNewRecord ? Math.round(anim.scoreRollValue) : this.score;
 
     // 本次得分（左列）
-    ctx.fillStyle = '#888888';
+    ctx.fillStyle = '#777777';
     ctx.font = '12px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
@@ -2793,7 +2791,7 @@ class GameEngine {
     ctx.fillText(String(displayScore), leftColX + colWidth / 2, scoreSectionY + 22);
 
     // 最高纪录（右列）
-    ctx.fillStyle = '#888888';
+    ctx.fillStyle = '#777777';
     ctx.font = '12px sans-serif';
     ctx.fillText('最高纪录', rightColX + colWidth / 2, scoreSectionY);
     ctx.fillStyle = '#FFB800';
@@ -2828,7 +2826,7 @@ class GameEngine {
     ctx.fillStyle = '#F5F5F5';
     this._roundRect(ctx, homeBtn.x, homeBtn.y, homeBtn.w, homeBtn.h, 12);
     ctx.fill();
-    ctx.fillStyle = '#666666';
+    ctx.fillStyle = '#444444';
     ctx.font = '16px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -3099,7 +3097,7 @@ class GameEngine {
           ctx.arc(x + item.width * 0.75, y + item.height * 0.6, item.height * 0.45, 0, Math.PI * 2);
           ctx.fill();
           // 云朵文字
-          ctx.fillStyle = '#999999';
+          ctx.fillStyle = '#777777';
           ctx.font = '10px sans-serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';

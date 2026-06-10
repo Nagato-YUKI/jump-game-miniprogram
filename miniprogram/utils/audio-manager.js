@@ -19,9 +19,9 @@ const SOUNDS = {
 };
 
 // 音频文件路径
-const BGM_PATH = '/audio/bgm.mp3';
+const BGM_PATH = '/audio/bgm.wav';
 const SFX_PATH_PREFIX = '/audio/sfx_';
-const SFX_PATH_SUFFIX = '.mp3';
+const SFX_PATH_SUFFIX = '.wav';
 
 class AudioManager {
   constructor() {
