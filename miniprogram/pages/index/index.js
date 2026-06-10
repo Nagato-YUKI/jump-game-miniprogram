@@ -83,6 +83,9 @@ Page({
         self.gameEngine.onLevelUpdate = function (level) {
           self.setData({ level: level });
         };
+        self.gameEngine.onCoinChange = function (coins) {
+          self.setData({ coins: coins });
+        };
         self.gameEngine.onGameOver = function (score, bestScore) {
           var isNewRecord = self.scoreManager.updateBestScore(score);
           self.setData({
@@ -197,6 +200,16 @@ Page({
       case 'tutorialComplete':
       case 'tutorialSkip':
         this.gameEngine.init();    // 回到开始界面
+        break;
+      // 商店按钮
+      case 'shopOpen':
+        // 商店已打开，无需额外操作
+        break;
+      case 'shopClose':
+        // 商店关闭，回到开始界面
+        break;
+      case 'shopPurchase':
+        // 购买完成，余额已在引擎内更新
         break;
     }
   },

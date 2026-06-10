@@ -297,6 +297,11 @@ class GameEngine {
     this.decorParticles = [];               // 装饰粒子数组（花瓣/气泡/火星/雪花/星星）
     this.showTutorial = false;             // 是否显示教程
     this.tutorialStep = 0;                  // 教程步骤(0~2)
+
+    // ========== 商店系统 ==========
+    this.showShop = false;                  // 是否显示商店
+    this.totalCoinsEarned = 0;              // 累计获得金币（跨游戏持久化）
+    this._loadTotalCoins();                 // 从本地存储加载累计金币
   }
 
   /** 注入已加载的图片资源 */
@@ -786,6 +791,214 @@ class GameEngine {
     return null;
   }
 
+  // ========== 商店系统 ==========
+
+  /** 商店商品定义 */
+  _getShopItems() {
+    return [
+      { id: 'extra_life', name: '额外生命', desc: '本局游戏 +1 最大生命值', icon: '\u2764\uFE0F', cost: 100, color: '#FF6B6B' },
+      { id: 'shield_start', name: '护盾开局', desc: '开局自带护盾保护', icon: '\uD83D\uDEE1', cost: 150, color: '#4ECDC4' },
+      { id: 'magnet_start', name: '磁铁开局', desc: '开局自带磁铁(15秒)', icon: '\uD83D\uDEE2', cost: 180, color: '#E74C3C' },
+      { id: 'double_score', name: '双倍得分', desc: '前30秒得分x2', icon: '\u00D732', cost: 250, color: '#FFD700' },
+    ];
+  },
+
+  /** 从本地存储加载累计金币 */
+  _loadTotalCoins() {
+    try {
+      this.totalCoinsEarned = wx.getStorageSync('totalCoinsEarned') || 0;
+    } catch (e) {
+      this.totalCoinsEarned = 0;
+    }
+  },
+
+  /** 保存累计金币到本地存储 */
+  _saveTotalCoins() {
+    try {
+      wx.setStorageSync('totalCoinsEarned', this.totalCoinsEarned);
+    } catch (e) { /* ignore */ }
+  },
+
+  /** 购买商品 */
+  purchaseItem(itemId) {
+    var items = this._getShopItems();
+    var item = null;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].id === itemId) { item = items[i]; break; }
+    }
+    if (!item || this.totalCoinsEarned < item.cost) return false;
+
+    this.totalCoinsEarned -= item.cost;
+    this._saveTotalCoins();
+
+    // 应用效果
+    switch (itemId) {
+      case 'extra_life':
+        this.maxLives = Math.min(this.maxLives + 1, 9);
+        this.lives = Math.min(this.lives + 1, this.maxLives);
+        break;
+      case 'shield_start':
+        this.shieldActive = true;
+        break;
+      case 'magnet_start':
+        if (this.itemManager) { this.itemManager.activateEffect('magnet'); }
+        break;
+      case 'double_score':
+        this.comboMultiplier = 2.0;
+        // 30秒后恢复
+        var self = this;
+        setTimeout(function () { self.comboMultiplier = 1.0; }, 30000);
+        break;
+    }
+    return true;
+  },
+
+  /** 渲染商店界面 */
+  renderShop(ctx) {
+    var w = this.screenWidth;
+    var h = this.screenHeight;
+
+    // 深色遮罩
+    ctx.fillStyle = 'rgba(20, 25, 30, 0.8)';
+    ctx.fillRect(0, 0, w, h);
+
+    // 面板
+    var pw = 320, ph = 460;
+    var px = (w - pw) / 2;
+    var py = (h - ph) / 2;
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    this._roundRect(ctx, px, py, pw, ph, 18);
+    ctx.fill();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
+    ctx.shadowBlur = 25;
+    ctx.shadowOffsetY = 8;
+    ctx.fill();
+    ctx.restore();
+
+    // 标题栏
+    ctx.fillStyle = '#2D3436';
+    ctx.font = 'bold 22px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('\uD83C\uDFEA \u5546\u5E97', w / 2, py + 38);  // 🛒 商店
+
+    // 金币余额
+    ctx.fillStyle = '#FFB800';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('\uD83E\uDE99 ' + this.totalCoinsEarned, px + pw - 20, py + 38);
+
+    // 分隔线
+    ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(px + 20, py + 62);
+    ctx.lineTo(px + pw - 20, py + 62);
+    ctx.stroke();
+
+    // 商品列表
+    var items = this._getShopItems();
+    var itemH = 85;
+    var itemStartY = py + 78;
+
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      var iy = itemStartY + i * itemH;
+      var canAfford = this.totalCoinsEarned >= item.cost;
+
+      // 商品卡片背景
+      ctx.save();
+      ctx.fillStyle = canAfford ? 'rgba(78,205,196,0.06)' : 'rgba(200,200,200,0.08)';
+      this._roundRect(ctx, px + 15, iy, pw - 30, itemH - 6, 12);
+      ctx.fill();
+      ctx.restore();
+
+      // 图标
+      ctx.font = '28px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(item.icon, px + 30, iy + (itemH - 6) / 2);
+
+      // 名称
+      ctx.fillStyle = canAfford ? '#2D3436' : '#999999';
+      ctx.font = 'bold 16px sans-serif';
+      ctx.fillText(item.name, px + 68, iy + 22);
+
+      // 描述
+      ctx.fillStyle = canAfford ? '#666666' : '#BBBBBB';
+      ctx.font = '12px sans-serif';
+      ctx.fillText(item.desc, px + 68, iy + 44);
+
+      // 价格按钮
+      var btnX = px + pw - 90;
+      var btnY = iy + 14;
+      var btnW = 70, btnH = 32;
+
+      ctx.save();
+      if (canAfford) {
+        ctx.fillStyle = item.color;
+        this._roundRect(ctx, btnX, btnY, btnW, btnH, btnH / 2);
+        ctx.fill();
+        ctx.fillStyle = '#FFFFFF';
+      } else {
+        ctx.fillStyle = 'rgba(200,200,200,0.3)';
+        this._roundRect(ctx, btnX, btnY, btnW, btnH, btnH / 2);
+        ctx.fill();
+        ctx.fillStyle = '#AAAAAA';
+      }
+      ctx.font = 'bold 13px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(item.cost + '', btnX + btnW / 2, btnY + btnH / 2);
+      ctx.restore();
+
+      // 记录按钮位置（用于触摸检测）
+      if (!this.shopButtons) this.shopButtons = [];
+      this.shopButtons[i] = { x: btnX, y: btnY, w: btnW, h: btnH, itemId: item.id, canAfford: canAfford };
+    }
+
+    // 关闭按钮
+    var closeBtnY = py + ph - 48;
+    ctx.save();
+    ctx.fillStyle = 'rgba(200,200,200,0.2)';
+    this._roundRect(ctx, px + pw/2 - 50, closeBtnY, 100, 36, 18);
+    ctx.fill();
+    ctx.fillStyle = '#555555';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('\u5173\u95ED', w / 2, closeBtnY + 18);  // 关闭
+    ctx.restore();
+
+    this.buttons.shopClose = { x: px + pw/2 - 50, y: closeBtnY, w: 100, h: 36 };
+  },
+
+  /** 处理商店触摸事件 */
+  handleShopTouch(x, y) {
+    // 关闭按钮
+    if (this.buttons.shopClose && this._hitTest(x, y, this.buttons.shopClose)) {
+      this.showShop = false;
+      this.shopButtons = null;
+      return 'shopClose';
+    }
+    // 商品按钮
+    if (this.shopButtons) {
+      for (var i = 0; i < this.shopButtons.length; i++) {
+        var btn = this.shopButtons[i];
+        if (btn && btn.canAfford && this._hitTest(x, y, btn)) {
+          var success = this.purchaseItem(btn.itemId);
+          if (success) {
+            this.audioManager.playSound(AudioManager.SOUNDS.BUTTON);  // 使用按钮音效
+          }
+          return 'shopPurchase';  // 保持商店打开，让用户看到余额变化
+        }
+      }
+    }
+    return null;
+  },
+
   /** 显示加载界面 */
   showLoading(progress, total) {
     this.state = GAME_STATE.LOADING;
@@ -804,6 +1017,9 @@ class GameEngine {
 
     // 排行榜按钮：开始按钮下方16px，尺寸160x44，描边样式
     this.buttons.ranking = { x: centerX - 80, y: h / 2 + 88, w: 160, h: 44 };
+
+    // 商店按钮：排行榜下方12px，尺寸120x36
+    this.buttons.shop = { x: centerX - 60, y: h / 2 + 144, w: 120, h: 36 };
 
     // 结束弹窗按钮：水平排列
     // 面板宽度320px，按钮140x48，间距16px
@@ -1206,6 +1422,11 @@ class GameEngine {
 
     // 0命了，真正游戏结束
     this.state = GAME_STATE.OVER;
+
+    // 保存本局金币到累计余额（商店系统）
+    this.totalCoinsEarned += this.coins;
+    this._saveTotalCoins();
+
     if (this.animFrameId) { this.canvas.cancelAnimationFrame(this.animFrameId); this.animFrameId = null; }
     this.scoreManager.updateBestScore(this.score);
 
@@ -1247,6 +1468,7 @@ class GameEngine {
     switch (item.type) {
       case 'coin':
         this.coins++;
+        this.totalCoinsCollected = (this.totalCoinsCollected || 0) + 1;  // 累计统计
         this.addScore(50); // 金币额外加50分
         this.combo++;
         // 触发金币收集闪烁（Phase 3）
@@ -1256,9 +1478,13 @@ class GameEngine {
         this._emitParticles(itemX, itemY, {
           count: 10, type: 'coin', color: '#FFD700', speed: 80, life: 0.4, size: 12
         });
+        // 金币浮动文字（+50）
+        this._createFloatingScore(50, itemX, itemY, '#FFD700');
         if (this.combo > 1) {
           this.addScore(this.combo * 5); // 连击奖励
         }
+        // 通知页面更新金币数据（确保同步）
+        if (this.onCoinChange) { this.onCoinChange(this.coins); }
         break;
       case 'shield':
         this.shieldActive = true;
@@ -1999,8 +2225,10 @@ class GameEngine {
     }
 
     if (this.state === GAME_STATE.IDLE) {
+      if (this.showShop) return this.handleShopTouch(x, y);
       if (this._hitTest(x, y, this.buttons.startGame)) return 'startGame';
       if (this._hitTest(x, y, this.buttons.ranking)) return 'ranking';
+      if (this._hitTest(x, y, this.buttons.shop)) { this.showShop = true; return 'shopOpen'; }
       return null;
     }
     if (this.state === GAME_STATE.PLAYING) {
@@ -2106,6 +2334,8 @@ class GameEngine {
       ctx.globalAlpha = this.transitionAlpha;
       this._renderStartScreen(ctx);
       ctx.globalAlpha = 1;
+      // 商店界面（覆盖在开始页之上）
+      if (this.showShop) { this.renderShop(ctx); }
       ctx.restore();
       return;
     }
@@ -2361,34 +2591,92 @@ class GameEngine {
     ctx.fillText('\u25C0   \uD83D\uDC4A   \u25B6', w / 2, guideY);  // ◀ 🖐️ ►
 
     // ========== 按钮区域 ==========
-    // 主按钮：200x56，渐变填充(#FF6B6B→#FF8E53)
+    // 主按钮：200x56，渐变填充(#FF6B6B→#FF8E53)，加强视觉
     var startBtn = this.buttons.startGame;
     var startImg = this._img(IMG.BTN_START);
     if (startImg) {
       ctx.drawImage(startImg, startBtn.x, startBtn.y, startBtn.w, startBtn.h);
     } else {
-      this._renderButtonWithGradient(ctx, startBtn, ['#FF6B6B', '#FF8E53'], '开始游戏', 18);
-    }
-
-    // 次要按钮：160x44，透明背景+2px边框(#4ECDC4)
-    var rankBtn = this.buttons.ranking;
-    var rankImg = null;  // 排行榜按钮暂无图片
-    if (rankImg) {
-      ctx.drawImage(rankImg, rankBtn.x, rankBtn.y, rankBtn.w, rankBtn.h);
-    } else {
-      // 描边样式按钮
       ctx.save();
-      ctx.strokeStyle = '#4ECDC4';
-      ctx.lineWidth = 2;
-      this._roundRect(ctx, rankBtn.x, rankBtn.y, rankBtn.w, rankBtn.h, rankBtn.h / 2);
+      // 外层深色描边（增强可见度）
+      ctx.strokeStyle = 'rgba(180, 60, 60, 0.5)';
+      ctx.lineWidth = 3;
+      this._roundRect(ctx, startBtn.x - 2, startBtn.y - 2, startBtn.w + 4, startBtn.h + 4, 14);
       ctx.stroke();
-      ctx.fillStyle = '#4ECDC4';
-      ctx.font = '15px sans-serif';
+
+      // 按钮阴影（加深）
+      ctx.shadowColor = 'rgba(220, 80, 60, 0.4)';
+      ctx.shadowBlur = 15;
+      ctx.shadowOffsetY = 6;
+
+      // 渐变主体
+      var sg = ctx.createLinearGradient(startBtn.x, startBtn.y, startBtn.x, startBtn.y + startBtn.h);
+      sg.addColorStop(0, '#FF5555');
+      sg.addColorStop(1, '#FF7744');
+      ctx.fillStyle = sg;
+      this._roundRect(ctx, startBtn.x, startBtn.y, startBtn.w, startBtn.h, 14);
+      ctx.fill();
+
+      // 内部高光
+      ctx.shadowColor = 'transparent';
+      var hl = ctx.createLinearGradient(startBtn.x, startBtn.y, startBtn.x, startBtn.y + startBtn.h * 0.5);
+      hl.addColorStop(0, 'rgba(255,255,255,0.25)');
+      hl.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = hl;
+      this._roundRect(ctx, startBtn.x + 3, startBtn.y + 3, startBtn.w - 6, startBtn.h * 0.45, 11);
+      ctx.fill();
+
+      // 文字（白色+深色描边）
+      ctx.font = 'bold 19px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('排行榜', rankBtn.x + rankBtn.w / 2, rankBtn.y + rankBtn.h / 2);
+      ctx.strokeStyle = 'rgba(150, 40, 40, 0.6)';
+      ctx.lineWidth = 3;
+      ctx.strokeText('开始游戏', startBtn.x + startBtn.w / 2, startBtn.y + startBtn.h / 2);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText('开始游戏', startBtn.x + startBtn.w / 2, startBtn.y + startBtn.h / 2);
       ctx.restore();
     }
+
+    // 排行榜按钮：从描边改为浅色填充+深色文字（高对比度）
+    var rankBtn = this.buttons.ranking;
+    ctx.save();
+    // 浅色背景
+    ctx.fillStyle = 'rgba(78, 205, 196, 0.18)';
+    this._roundRect(ctx, rankBtn.x, rankBtn.y, rankBtn.w, rankBtn.h, rankBtn.h / 2);
+    ctx.fill();
+    // 边框
+    ctx.strokeStyle = '#4ECDC4';
+    ctx.lineWidth = 2;
+    this._roundRect(ctx, rankBtn.x, rankBtn.y, rankBtn.w, rankBtn.h, rankBtn.h / 2);
+    ctx.stroke();
+    // 文字（深色粗体，清晰可读）
+    ctx.fillStyle = '#2D3436';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('排行榜', rankBtn.x + rankBtn.w / 2, rankBtn.y + rankBtn.h / 2);
+    ctx.restore();
+
+    // ========== 商店按钮（金币图标+文字）==========
+    var shopBtn = this.buttons.shop;
+    ctx.save();
+    // 金币色背景条
+    ctx.fillStyle = 'rgba(255, 184, 0, 0.15)';
+    this._roundRect(ctx, shopBtn.x, shopBtn.y, shopBtn.w, shopBtn.h, shopBtn.h / 2);
+    ctx.fill();
+    // 金色边框
+    ctx.strokeStyle = '#FFB800';
+    ctx.lineWidth = 1.5;
+    this._roundRect(ctx, shopBtn.x, shopBtn.y, shopBtn.w, shopBtn.h, shopBtn.h / 2);
+    ctx.stroke();
+    // 文字
+    ctx.fillStyle = '#B8860B';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('\uD83C\uDFEA \u5546\u5E97', shopBtn.x + shopBtn.w / 2, shopBtn.y + shopBtn.h / 2);  // 🛒 商店
+    ctx.restore();
 
     // ========== 底部信息栏 ==========
     var bottomY = h - 40;
@@ -2546,8 +2834,8 @@ class GameEngine {
     ctx.fillText('Lv.' + this.level, levelX, 42);
     ctx.restore();
 
-    // ========== 右侧：金币区域（金色#FFB800）==========
-    var coinX = w - 85;
+    // ========== 右侧：金币区域（深色背景+金色高亮）==========
+    var coinX = w - 95;
 
     ctx.save();
     // 闪烁效果（收集时触发）
@@ -2555,15 +2843,26 @@ class GameEngine {
       ctx.globalAlpha = 1 - anim.coinFlashAlpha * 0.5 + Math.sin(Date.now() * 0.025) * anim.coinFlashAlpha * 0.3;
     }
 
+    // 金币区域背景条（深色半透明，确保可读性）
+    var coinBgW = 80;
+    var coinBgH = 28;
+    ctx.fillStyle = 'rgba(45, 52, 54, 0.75)';
+    this._roundRect(ctx, coinX - 8, lifeY - coinBgH / 2, coinBgW, coinBgH, 14);
+    ctx.fill();
+
     // 金币图标
-    ctx.fillStyle = '#FFB800';
+    ctx.fillStyle = '#FFD700';
     ctx.font = '18px sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillText('\uD83E\uDE99', coinX, lifeY);  // 🪙
 
-    // 金币数量
+    // 金币数量（粗体白色+描边，确保清晰可见）
     ctx.font = 'bold 18px monospace';
+    ctx.strokeStyle = 'rgba(45, 52, 54, 0.8)';
+    ctx.lineWidth = 2.5;
+    ctx.strokeText(String(this.coins), coinX + 24, lifeY);
+    ctx.fillStyle = '#FFFFFF';
     ctx.fillText(String(this.coins), coinX + 24, lifeY);
     ctx.restore();
 
