@@ -87,40 +87,42 @@ var SFX_CONFIGS = {
  * - local: 本地相对路径（用于开发环境和云加载失败时的回退）
  */
 var IMAGE_CONFIGS = {
-  // 角色（>50KB，放云端）
+  // 角色
   player_idle:  { cloud: CLOUD_BASE_URL + 'images/player/player_idle.png',  local: '/images/player/player_idle.png' },
   player_jump:  { cloud: CLOUD_BASE_URL + 'images/player/player_jump.png',  local: '/images/player/player_jump.png' },
   player_fall:  { cloud: CLOUD_BASE_URL + 'images/player/player_fall.png',  local: '/images/player/player_fall.png' },
 
-  // 平台（>50KB，放云端）
+  // 平台
   platform_normal:  { cloud: CLOUD_BASE_URL + 'images/platforms/platform_normal.png',  local: '/images/platforms/platform_normal.png' },
   platform_spring:  { cloud: CLOUD_BASE_URL + 'images/platforms/platform_spring.png',  local: '/images/platforms/platform_spring.png' },
   platform_fragile: { cloud: CLOUD_BASE_URL + 'images/platforms/platform_fragile.png', local: '/images/platforms/platform_fragile.png' },
   platform_moving:  { cloud: CLOUD_BASE_URL + 'images/platforms/platform_moving.png',  local: '/images/platforms/platform_moving.png' },
 
-  // 背景（转JPG后较小，可保留本地）
-  bg_gradient: { cloud: null, local: '/images/bg/bg_gradient.jpg' },
-  bg_clouds:   { cloud: null, local: '/images/bg/bg_clouds.jpg' },
-  bg_mountains:{ cloud: null, local: '/images/bg/bg_mountains.jpg' },
+  // 背景
+  bg_gradient: { cloud: CLOUD_BASE_URL + 'images/bg/bg_gradient.jpg', local: '/images/bg/bg_gradient.jpg' },
+  bg_clouds:   { cloud: CLOUD_BASE_URL + 'images/bg/bg_clouds.jpg',   local: '/images/bg/bg_clouds.jpg' },
+  bg_mountains:{ cloud: CLOUD_BASE_URL + 'images/bg/bg_mountains.jpg',local: '/images/bg/bg_mountains.jpg' },
 
-  // UI面板（中等大小，保留本地压缩版）
-  btn_start:     { cloud: null, local: '/images/ui/btn_start.png' },
-  btn_restart:   { cloud: null, local: '/images/ui/btn_restart.png' },
-  btn_home:      { cloud: null, local: '/images/ui/btn_home.png' },
-  panel_start:   { cloud: null, local: '/images/ui/panel_start.png' },
-  panel_gameover:{ cloud: null, local: '/images/ui/panel_gameover.png' },
-  logo_title:    { cloud: null, local: '/images/ui/logo_title.png' },
-  icon_pause:    { cloud: null, local: '/images/ui/icon_pause.png' },
+  // UI面板
+  btn_start:     { cloud: CLOUD_BASE_URL + 'images/ui/btn_start.png',      local: '/images/ui/btn_start.png' },
+  btn_restart:   { cloud: CLOUD_BASE_URL + 'images/ui/btn_restart.png',    local: '/images/ui/btn_restart.png' },
+  btn_home:      { cloud: CLOUD_BASE_URL + 'images/ui/btn_home.png',       local: '/images/ui/btn_home.png' },
+  panel_start:   { cloud: CLOUD_BASE_URL + 'images/ui/panel_start.png',    local: '/images/ui/panel_start.png' },
+  panel_gameover:{ cloud: CLOUD_BASE_URL + 'images/ui/panel_gameover.png', local: '/images/ui/panel_gameover.png' },
+  logo_title:    { cloud: CLOUD_BASE_URL + 'images/ui/logo_title.png',     local: '/images/ui/logo_title.png' },
+  icon_pause:    { cloud: CLOUD_BASE_URL + 'images/ui/icon_pause.png',     local: '/images/ui/icon_pause.png' },
 
-  // 特效/道具（小图，保留本地）
-  particle_star:  { cloud: null, local: '/images/effects/particle_star.png' },
-  effect_spring:  { cloud: null, local: '/images/effects/effect_spring.png' },
-  effect_break:   { cloud: null, local: '/images/effects/effect_break.png' },
-  item_coin:      { cloud: null, local: '/images/items/item_coin.png' },
-  item_shield:    { cloud: null, local: '/images/items/item_shield.png' },
-  item_spring_shoe:{ cloud: null, local: '/images/items/item_spring_shoe.png' },
-  item_magnet:    { cloud: null, local: '/images/items/item_magnet.png' },
-  item_cloud:     { cloud: null, local: '/images/items/item_cloud.png' },
+  // 特效
+  particle_star:  { cloud: CLOUD_BASE_URL + 'images/effects/particle_star.png',  local: '/images/effects/particle_star.png' },
+  effect_spring:  { cloud: CLOUD_BASE_URL + 'images/effects/effect_spring.png',  local: '/images/effects/effect_spring.png' },
+  effect_break:   { cloud: CLOUD_BASE_URL + 'images/effects/effect_break.png',   local: '/images/effects/effect_break.png' },
+
+  // 道具
+  item_coin:       { cloud: CLOUD_BASE_URL + 'images/items/item_coin.png',        local: '/images/items/item_coin.png' },
+  item_shield:     { cloud: CLOUD_BASE_URL + 'images/items/item_shield.png',      local: '/images/items/item_shield.png' },
+  item_spring_shoe:{ cloud: CLOUD_BASE_URL + 'images/items/item_spring_shoe.png', local: '/images/items/item_spring_shoe.png' },
+  item_magnet:     { cloud: CLOUD_BASE_URL + 'images/items/item_magnet.png',      local: '/images/items/item_magnet.png' },
+  item_cloud:      { cloud: CLOUD_BASE_URL + 'images/items/item_cloud.png',       local: '/images/items/item_cloud.png' },
 };
 
 // ==================== 工具方法 ====================
