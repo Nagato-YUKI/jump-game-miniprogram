@@ -1,7 +1,11 @@
 /**
  * 音频管理器 - 微信小程序游戏专用
  * 管理 BGM 和音效的播放/暂停/音量控制
+ *
+ * 加载策略: 云存储URL优先 → 失败自动回退本地文件
  */
+
+var assetConfig = require('./asset-config');
 
 // 音效名称常量
 const SOUNDS = {
@@ -17,11 +21,6 @@ const SOUNDS = {
   NEW_RECORD: 'newrecord',
   BUTTON: 'button',
 };
-
-// 音频文件路径（BGM使用MP3格式，音效使用WAV格式）
-const BGM_PATH = '/audio/bgm_cutie_patootie.mp3';
-const SFX_PATH_PREFIX = '/audio/sfx_';
-const SFX_PATH_SUFFIX = '.wav';
 
 class AudioManager {
   constructor() {
@@ -68,6 +67,7 @@ class AudioManager {
 
   /**
    * 初始化音频上下文，加载所有音频资源
+   * 策略: 云存储优先 → onError 回退本地
    */
   init() {
     if (this._initialized) {
@@ -76,40 +76,79 @@ class AudioManager {
     }
 
     try {
+      var self = this;
+      var useCloud = assetConfig.isCloudReady();
+      console.log('[AudioManager] 云存储模式:', useCloud ? '启用' : '未配置(使用本地)');
+
       // 创建 BGM 实例
       this._bgmAudio = wx.createInnerAudioContext();
-      this._bgmAudio.src = BGM_PATH;
-      this._bgmAudio.loop = true;
-      this._bgmAudio.volume = this._isMuted ? 0 : this._bgmVolume;
-      this._bgmAudio.obeyMuteSwitch = false;
-
-      // BGM 错误处理：加载失败不阻塞游戏
-      this._bgmAudio.onError((err) => {
-        console.warn('[AudioManager] BGM 加载失败', err);
+      this._loadWithFallback(this._bgmAudio, assetConfig.getBGMUrl(), assetConfig.BGM_CONFIG.localPath, function(audio, finalUrl) {
+        audio.loop = true;
+        audio.volume = self._isMuted ? 0 : self._bgmVolume;
+        audio.obeyMuteSwitch = false;
       });
 
       // 预创建所有音效实例
-      const soundNames = Object.values(SOUNDS);
-      for (const name of soundNames) {
-        const audio = wx.createInnerAudioContext();
-        audio.src = `${SFX_PATH_PREFIX}${name}${SFX_PATH_SUFFIX}`;
-        audio.volume = this._isMuted ? 0 : this._sfxVolume;
-        audio.obeyMuteSwitch = false;
+      var soundNames = Object.values(SOUNDS);
+      for (var i = 0; i < soundNames.length; i++) {
+        (function(name) {
+          var sfxAudio = wx.createInnerAudioContext();
+          var cloudUrl = assetConfig.getSFXUrl(name);
+          var localUrl = (assetConfig.SFX_CONFIGS[name] || {}).localPath || '';
 
-        audio.onError((err) => {
-          console.warn(`[AudioManager] 音效 [${name}] 加载失败`, err);
-        });
-
-        this._sfxPool[name] = audio;
+          self._loadWithFallback(sfxAudio, cloudUrl, localUrl, function(audio) {
+            audio.volume = self._isMuted ? 0 : self._sfxVolume;
+            audio.obeyMuteSwitch = false;
+            self._sfxPool[name] = audio;
+          });
+        })(soundNames[i]);
       }
 
-      // 注册小程序生命周期监听：切后台暂停 / 回前台恢复
+      // 注册小程序生命周期监听
       this._registerAppLifecycle();
 
       this._initialized = true;
-      console.log(`[AudioManager] 初始化完成，共加载 ${soundNames.length} 个音效`);
+      console.log('[AudioManager] 初始化完成，共加载 ' + soundNames.length + ' 个音效');
     } catch (e) {
       console.error('[AudioManager] 初始化异常', e);
+    }
+  }
+
+  /**
+   * 带回退机制的加载：先试云URL，失败则用本地路径
+   * @private
+   * @param {InnerAudioContext} audio - 音频实例
+   * @param {string} primaryUrl - 首选URL（云存储）
+   * @param {string} fallbackUrl - 回退URL（本地）
+   * @param {Function} onSuccess - 加载成功回调 (audio, finalUrl)
+   */
+  _loadWithFallback(audio, primaryUrl, fallbackUrl, onSuccess) {
+    var hasTriedFallback = false;
+    var self = this;
+
+    function doLoad(url, isFallback) {
+      audio.src = url;
+      audio.onCanplay(function() {
+        // 成功加载，清除错误回调避免内存泄漏
+        audio.onError(function() {});
+        if (onSuccess) onSuccess(audio, url);
+      });
+      audio.onError(function(err) {
+        if (!hasTriedFallback && fallbackUrl) {
+          hasTriedFallback = true;
+          console.warn('[AudioManager] 云加载失败，回退本地:', isFallback ? '(已回退)' : err);
+          doLoad(fallbackUrl, true);
+        } else {
+          console.error('[AudioManager] 加载完全失败:', err);
+        }
+      });
+    }
+
+    // 如果云存储未配置或主URL与回退相同，直接用本地
+    if (!primaryUrl || primaryUrl === fallbackUrl || !assetConfig.isCloudReady()) {
+      doLoad(fallbackUrl, true);
+    } else {
+      doLoad(primaryUrl, false);
     }
   }
 
@@ -118,7 +157,6 @@ class AudioManager {
    */
   playBGM() {
     if (!this._bgmAudio || !this._initialized) return;
-
     try {
       if (this._isMuted) return;
       this._bgmAudio.play();
@@ -132,7 +170,6 @@ class AudioManager {
    */
   pauseBGM() {
     if (!this._bgmAudio || !this._initialized) return;
-
     try {
       this._bgmAudio.pause();
     } catch (e) {
@@ -145,10 +182,8 @@ class AudioManager {
    */
   resumeBGM() {
     if (!this._bgmAudio || !this._initialized) return;
-
     try {
       if (this._isMuted) return;
-      // 微信InnerAudioContext没有resume方法，用play替代
       if (typeof this._bgmAudio.resume === 'function') {
         this._bgmAudio.resume();
       } else if (typeof this._bgmAudio.play === 'function') {
@@ -164,7 +199,6 @@ class AudioManager {
    */
   stopBGM() {
     if (!this._bgmAudio || !this._initialized) return;
-
     try {
       this._bgmAudio.stop();
     } catch (e) {
@@ -178,20 +212,16 @@ class AudioManager {
    */
   playSound(name) {
     if (!this._initialized || this._isMuted) return;
-
-    const audio = this._sfxPool[name];
+    var audio = this._sfxPool[name];
     if (!audio) {
-      console.warn(`[AudioManager] 未找到音效: ${name}`);
+      console.warn('[AudioManager] 未找到音效: ' + name);
       return;
     }
-
     try {
-      // InnerAudioContext 调用 play() 会从头播放，
-      // 同一音效连续触发时自动覆盖上一次播放
       audio.seek(0);
       audio.play();
     } catch (e) {
-      console.warn(`[AudioManager] playSound [${name}] 异常`, e);
+      console.warn('[AudioManager] playSound [' + name + '] 异常', e);
     }
   }
 
@@ -201,7 +231,6 @@ class AudioManager {
    */
   setBGMVolume(volume) {
     this._bgmVolume = Math.max(0, Math.min(1, volume));
-
     if (this._bgmAudio && !this._isMuted) {
       this._bgmAudio.volume = this._bgmVolume;
     }
@@ -213,10 +242,9 @@ class AudioManager {
    */
   setSFXVolume(volume) {
     this._sfxVolume = Math.max(0, Math.min(1, volume));
-
     if (!this._isMuted) {
-      for (const audio of Object.values(this._sfxPool)) {
-        audio.volume = this._sfxVolume;
+      for (var key in this._sfxPool) {
+        this._sfxPool[key].volume = this._sfxVolume;
       }
     }
   }
@@ -227,19 +255,15 @@ class AudioManager {
    */
   setMuted(muted) {
     this._isMuted = muted;
-
-    const targetVol = muted ? 0 : this._bgmVolume;
-    const sfxTargetVol = muted ? 0 : this._sfxVolume;
-
+    var targetVol = muted ? 0 : this._bgmVolume;
+    var sfxTargetVol = muted ? 0 : this._sfxVolume;
     if (this._bgmAudio) {
       this._bgmAudio.volume = targetVol;
     }
-
-    for (const audio of Object.values(this._sfxPool)) {
-      audio.volume = sfxTargetVol;
+    for (var key in this._sfxPool) {
+      this._sfxPool[key].volume = sfxTargetVol;
     }
-
-    console.log(`[AudioManager] 静音模式: ${muted ? '开启' : '关闭'}`);
+    console.log('[AudioManager] 静音模式: ' + (muted ? '开启' : '关闭'));
   }
 
   /**
@@ -247,23 +271,17 @@ class AudioManager {
    */
   destroy() {
     try {
-      // 移除生命周期监听
       this._unregisterAppLifecycle();
-
-      // 销毁 BGM
       if (this._bgmAudio) {
         this._bgmAudio.stop();
         this._bgmAudio.destroy();
         this._bgmAudio = null;
       }
-
-      // 销毁所有音效实例
-      for (const name of Object.keys(this._sfxPool)) {
-        this._sfxPool[name].stop();
-        this._sfxPool[name].destroy();
+      for (var key in this._sfxPool) {
+        this._sfxPool[key].stop();
+        this._sfxPool[key].destroy();
       }
       this._sfxPool = {};
-
       this._initialized = false;
       console.log('[AudioManager] 已销毁');
     } catch (e) {
@@ -273,44 +291,27 @@ class AudioManager {
 
   // ==================== 内部方法 ====================
 
-  /**
-   * 注册小程序切后台/回前台的生命周期监听
-   * @private
-   */
   _registerAppLifecycle() {
-    const app = getApp();
+    var app = getApp();
+    this._onHideHandler = function() { this.pauseBGM(); }.bind(this);
+    this._onShowHandler = function() { this.resumeBGM(); }.bind(this);
 
-    this._onHideHandler = () => {
-      this.pauseBGM();
-    };
+    if (app.onHide) app.onHide(this._onHideHandler);
+    if (app.onShow) app.onShow(this._onShowHandler);
 
-    this._onShowHandler = () => {
-      this.resumeBGM();
-    };
-
-    app.onHide?.(this._onHideHandler);
-    app.onShow?.(this._onShowHandler);
-
-    // 同时使用 wx 全局事件兜底
     if (wx.onAppHide && wx.onAppShow) {
-      wx.onAppHide(() => this.pauseBGM());
-      wx.onAppShow(() => this.resumeBGM());
+      wx.onAppHide(this._onHideHandler);
+      wx.onAppShow(this._onShowHandler);
     }
   }
 
-  /**
-   * 移除生命周期监听
-   * @private
-   */
   _unregisterAppLifecycle() {
-    // 小程序 API 不支持 offAppHide/offAppShow，
-    // 此处仅清除引用，避免内存泄漏
     this._onHideHandler = null;
     this._onShowHandler = null;
   }
 }
 
-// 导出音效常量，方便外部使用
+// 导出音效常量
 AudioManager.SOUNDS = SOUNDS;
 
 module.exports = AudioManager;
