@@ -1142,8 +1142,17 @@ class GameEngine {
     // 「提交分数」链接文字在按钮下方
     this.buttons.submitScore = { x: centerX - 80, y: 0, w: 160, h: 32 };  // Y坐标动态计算
 
-    // 暂停按钮：右上角40x32px（Phase 3: 增大）
-    this.buttons.pause = { x: w - 48, y: 16, w: 40, h: 32 };
+    // 暂停按钮：右下角（避开微信胶囊按钮区域）
+    // 胶囊按钮在右上角(约w-95~w-5, y=0~50)，暂停按钮放在HUD栏右侧偏下
+    var menuBtn = {};
+    try { menuBtn = wx.getMenuButtonBoundingClientRect(); } catch(e) {}
+    var menuBottom = (menuBtn.height || 32) + (menuBtn.top || 6) + 8;
+    this.buttons.pause = {
+      x: w - 52,
+      y: Math.max(menuBottom, 20),
+      w: 38,
+      h: 30
+    };
 
     // 音量滑块区域（在_renderPauseOverlay中动态更新坐标）
     this.buttons.bgmVolumeBar = null;

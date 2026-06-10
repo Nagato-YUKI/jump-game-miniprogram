@@ -77,8 +77,10 @@ class AudioManager {
 
     try {
       var self = this;
-      var useCloud = assetConfig.isCloudReady();
-      console.log('[AudioManager] 云存储模式:', useCloud ? '启用' : '未配置(使用本地)');
+      var cloudAvailable = assetConfig.USE_CLOUD &&
+        assetConfig.CLOUD_BASE_URL &&
+        !assetConfig.CLOUD_BASE_URL.includes('your-env-id');
+      console.log('[AudioManager] 云存储模式:', cloudAvailable ? '启用(云端优先)' : '未配置(使用本地)');
 
       // 创建 BGM 实例
       this._bgmAudio = wx.createInnerAudioContext();
