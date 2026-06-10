@@ -801,7 +801,7 @@ class GameEngine {
       { id: 'magnet_start', name: '磁铁开局', desc: '开局自带磁铁(15秒)', icon: '\uD83D\uDEE2', cost: 180, color: '#E74C3C' },
       { id: 'double_score', name: '双倍得分', desc: '前30秒得分x2', icon: '\u00D732', cost: 250, color: '#FFD700' },
     ];
-  },
+  }
 
   /** 从本地存储加载累计金币 */
   _loadTotalCoins() {
@@ -817,7 +817,7 @@ class GameEngine {
     try {
       wx.setStorageSync('totalCoinsEarned', this.totalCoinsEarned);
     } catch (e) { /* ignore */ }
-  },
+  }
 
   /** 购买商品 */
   purchaseItem(itemId) {
@@ -851,7 +851,7 @@ class GameEngine {
         break;
     }
     return true;
-  },
+  }
 
   /** 渲染商店界面 */
   renderShop(ctx) {
@@ -973,7 +973,7 @@ class GameEngine {
     ctx.restore();
 
     this.buttons.shopClose = { x: px + pw/2 - 50, y: closeBtnY, w: 100, h: 36 };
-  },
+  }
 
   /** 处理商店触摸事件 */
   handleShopTouch(x, y) {
@@ -997,7 +997,7 @@ class GameEngine {
       }
     }
     return null;
-  },
+  }
 
   /** 显示加载界面 */
   showLoading(progress, total) {
