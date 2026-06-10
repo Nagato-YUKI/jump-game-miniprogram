@@ -185,10 +185,10 @@ Page({
       case 'submitScore':
         this.submitScore();
         break;
-      // 音量调节
+      // 音量调节（触发实时渲染）
       case 'volumeChange':
-        // volumeChange 由 gameEngine.handleTouch 内部直接处理音量
-        // 这里只需触发页面刷新（如有需要）
+        // 确保滑块UI立即更新
+        if (this.gameEngine) { this.gameEngine.render(); }
         break;
       // 教程按钮
       case 'tutorialNext':

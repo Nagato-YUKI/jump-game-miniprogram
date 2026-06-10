@@ -841,10 +841,10 @@ class GameEngine {
   pause() {
     if (this.state === GAME_STATE.PLAYING) {
       this.state = GAME_STATE.PAUSED;
-      if (this.animFrameId) { this.canvas.cancelAnimationFrame(this.animFrameId); this.animFrameId = null; }
+      // 不再取消动画循环！gameLoop在PAUSED状态仍会render()
       // 暂停BGM
       this.audioManager.pauseBGM();
-      this.render();
+      this.render();  // 立即渲染一帧暂停界面
     }
   }
 
@@ -867,11 +867,13 @@ class GameEngine {
 
   // ========== 主循环 ==========
   gameLoop() {
-    if (this.state !== GAME_STATE.PLAYING) return;
-    var now = Date.now();
-    var dt = Math.min(now - this.lastTime, 33);
-    this.lastTime = now;
-    this.update(dt);
+    if (this.state === GAME_STATE.PLAYING) {
+      var now = Date.now();
+      var dt = Math.min(now - this.lastTime, 33);
+      this.lastTime = now;
+      this.update(dt);
+    }
+    // 始终渲染（包括PAUSED/OVER/IDLE状态，确保滑块等UI实时更新）
     this.render();
     this.animFrameId = this.canvas.requestAnimationFrame(() => this.gameLoop());
   }
@@ -2257,7 +2259,7 @@ class GameEngine {
     this._drawProgressBar(ctx, barX, barY, barW, barH, pct, ['#4ECDC4', '#44A08D']);
 
     // 百分比文字（粗体13px）
-    ctx.fillStyle = '#666666';
+    ctx.fillStyle = '#444444';
     ctx.font = 'bold 13px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
@@ -2265,14 +2267,14 @@ class GameEngine {
 
     // 提示文字轮播
     var tips = ['准备资源...', '加载图形...', '即将完成...'];
-    ctx.fillStyle = '#777777';
-    ctx.font = '13px sans-serif';
+    ctx.fillStyle = '#555555';
+    ctx.font = 'bold 13px sans-serif';
     ctx.textBaseline = 'middle';
     ctx.fillText(tips[anim.loadTipIndex], w / 2, panelY + 115);
 
     // 底部版本信息
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.font = '11px sans-serif';
+    ctx.fillStyle = 'rgba(60, 60, 60, 0.85)';
+    ctx.font = 'bold 11px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
     ctx.fillText('v3.0 | Jump Game', w / 2, h - 15);
@@ -2327,30 +2329,36 @@ class GameEngine {
     // ========== 副标题区域 ==========
     var subtitleY = titleAreaTop + titleAreaHeight + 20;
 
-    // 副标题背景条（增强可读性）
+    // 副标题深色背景条（高对比度）
     ctx.save();
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-    this._roundRect(ctx, w / 2 - 140, subtitleY - 14, 280, 28, 14);
+    ctx.fillStyle = 'rgba(45, 52, 54, 0.82)';
+    this._roundRect(ctx, w / 2 - 150, subtitleY - 16, 300, 32, 16);
     ctx.fill();
     ctx.restore();
 
-    ctx.fillStyle = '#333333';
-    ctx.font = '13px sans-serif';
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 13px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
+    // 描边效果（深色描边增强可读性）
+    ctx.strokeStyle = 'rgba(45, 52, 54, 0.8)';
+    ctx.lineWidth = 3;
+    ctx.strokeText('触摸屏幕左右两侧控制角色移动', w / 2, subtitleY);
     ctx.fillText('触摸屏幕左右两侧控制角色移动', w / 2, subtitleY);
 
-    // 操作指引：带图标和背景
-    var guideY = subtitleY + 32;
+    // 操作指引：深色圆角按钮风格
+    var guideY = subtitleY + 34;
     ctx.save();
-    ctx.fillStyle = 'rgba(78, 205, 196, 0.12)';
-    this._roundRect(ctx, w / 2 - 80, guideY - 12, 160, 26, 13);
+    ctx.fillStyle = 'rgba(78, 205, 196, 0.85)';
+    this._roundRect(ctx, w / 2 - 90, guideY - 14, 180, 28, 14);
     ctx.fill();
     ctx.restore();
 
-    ctx.fillStyle = '#444444';
-    ctx.font = '15px sans-serif';
-    ctx.fillText('\u25C0  \uD83D\uDC4A  \u25B6', w / 2, guideY);  // ◀ 🖐️ ►
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('\u25C0   \uD83D\uDC4A   \u25B6', w / 2, guideY);  // ◀ 🖐️ ►
 
     // ========== 按钮区域 ==========
     // 主按钮：200x56，渐变填充(#FF6B6B→#FF8E53)
@@ -3679,8 +3687,8 @@ class GameEngine {
     var radius = h / 2;
 
     // 标签
-    ctx.fillStyle = '#666666';
-    ctx.font = '13px sans-serif';
+    ctx.fillStyle = '#444444';
+    ctx.font = 'bold 13px sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillText(label, x, y - 12);

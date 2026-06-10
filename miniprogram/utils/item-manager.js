@@ -131,7 +131,7 @@ ItemManager.prototype.update = function(cameraY, player) {
 };
 
 /**
- * 检测角色与道具的碰撞（增强版：支持平台落地自动收集）
+ * 检测角色与道具的碰撞（距离检测，比AABB更可靠）
  * @param {Object} player
  * @param {Object} [landedPlatform] 玩家当前落脚的平台（可选，用于自动收集）
  * @returns {string|null} - 触发的道具类型或null
@@ -141,7 +141,12 @@ ItemManager.prototype.checkCollision = function(player, landedPlatform) {
   var pw = player.width, ph = player.height;
   var collectedType = null;
 
-  // 先检查普通碰撞
+  // 角色中心点
+  var pcx = px + pw / 2;
+  var pcy = py + ph / 2;
+  // 收集半径基础值：角色半宽/高中的较大者
+  var baseRadius = Math.max(pw, ph) / 2;
+
   for (var i = 0; i < this.items.length; i++) {
     var item = this.items[i];
     if (item.collected) continue;
@@ -149,10 +154,20 @@ ItemManager.prototype.checkCollision = function(player, landedPlatform) {
     var ix = item.x, iy = item.y + item.bobOffset; // 加上浮动偏移
     var iw = item.width, ih = item.height;
 
-    // AABB 碰撞检测（放大判定范围让收集更容易）
-    var padding = item.type === 'coin' ? 12 : 6; // 金币额外宽容12px
-    if (px < ix + iw + padding && px + pw > ix - padding &&
-        py < iy + ih + padding && py + ph > iy - padding) {
+    // 道具中心点
+    var icx = ix + iw / 2;
+    var icy = iy + ih / 2;
+
+    // 距离检测（比AABB宽容得多）
+    var dx = pcx - icx;
+    var dy = pcy - icy;
+    var dist = Math.sqrt(dx * dx + dy * dy);
+
+    // 金币额外宽容20px，其他道具10px
+    var extraPadding = item.type === 'coin' ? 20 : 10;
+    var collectRadius = baseRadius + Math.max(iw, ih) / 2 + extraPadding;
+
+    if (dist < collectRadius) {
       item.collected = true;
       collectedType = item.type;
       this.activateEffect(item.type);
@@ -160,13 +175,13 @@ ItemManager.prototype.checkCollision = function(player, landedPlatform) {
     }
   }
 
-  // 如果普通碰撞没触发，尝试平台落地自动收集（兜底机制）
+  // 兜底：平台落地自动收集（确保踩到平台上的道具必定被收集）
   if (!collectedType && landedPlatform) {
     for (var j = 0; j < this.items.length; j++) {
       var pItem = this.items[j];
       if (pItem.collected) continue;
-      // 检查道具是否在当前落脚平台上（Y坐标接近平台顶部）
-      if (Math.abs(pItem.y - (landedPlatform.y - pItem.height - 5)) < 15) {
+      // 检查道具是否在当前落脚平台的Y坐标范围内（±20px容差）
+      if (Math.abs(pItem.y - (landedPlatform.y - pItem.height - 5)) < 20) {
         pItem.collected = true;
         collectedType = pItem.type;
         this.activateEffect(pItem.type);
