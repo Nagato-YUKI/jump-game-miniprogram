@@ -1,0 +1,16 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/ranking/index"
+  ],
+  "window": {
+    "backgroundColor": "#F7FFF7",
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#FF6B6B",
+    "navigationBarTitleText": "跳跃闯关",
+    "navigationBarTextStyle": "white"
+  },
+  "sitemapLocation": "sitemap.json",
+  "style": "v2",
+  "lazyCodeLoading": "requiredComponents"
+}

@@ -1,0 +1,25 @@
+# 音频资源目录
+
+## 文件清单
+
+| 文件 | 说明 |
+|------|------|
+| bgm.mp3 | 背景音乐（循环播放） |
+| sfx_jump.mp3 | 跳跃音效 |
+| sfx_spring.mp3 | 弹簧弹跳音效 |
+| sfx_break.mp3 | 平台破碎音效 |
+| sfx_coin.mp3 | 金币收集音效 |
+| sfx_shield.mp3 | 护盾道具音效 |
+| sfx_spring_shoe.mp3 | 弹簧鞋道具音效 |
+| sfx_magnet.mp3 | 磁铁道具音效 |
+| sfx_hurt.mp3 | 受伤/扣命音效 |
+| sfx_gameover.mp3 | 游戏结束音效 |
+| sfx_newrecord.mp3 | 新纪录音效 |
+| sfx_button.mp3 | 按钮点击音效 |
+
+## 规范
+
+- 格式：MP3
+- 采样率：44100Hz
+- 单文件体积：建议 <= 500KB
+- BGM 建议做无缝循环处理

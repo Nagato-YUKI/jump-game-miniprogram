@@ -1,0 +1,18 @@
+# 隐私配置
+.env
+project.private.config.json
+
+# 技术文档（开发用，不推送）
+.trae/specs/
+design-spec.md
+findings.md
+progress.md
+task_plan.md
+
+# Python缓存
+__pycache__/
+*.pyc
+
+# 系统文件
+.DS_Store
+Thumbs.db

@@ -1,0 +1,189 @@
+/* pages/ranking/index.wxss */
+
+.ranking-container {
+  min-height: 100vh;
+  background-color: #F7FFF7;
+  padding-bottom: 120rpx;
+}
+
+/* 标签栏 */
+.tab-bar {
+  display: flex;
+  background-color: #FFFFFF;
+  padding: 20rpx 0;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+}
+
+.tab-item {
+  flex: 1;
+  text-align: center;
+  font-size: 30rpx;
+  color: #888888;
+  padding: 16rpx 0;
+  position: relative;
+  transition: color 0.3s;
+}
+
+.tab-item.active {
+  color: #FF6B6B;
+  font-weight: 600;
+}
+
+.tab-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60rpx;
+  height: 6rpx;
+  background-color: #FF6B6B;
+  border-radius: 3rpx;
+}
+
+/* 排行榜列表 */
+.ranking-list {
+  padding: 20rpx 24rpx;
+}
+
+.ranking-item {
+  display: flex;
+  align-items: center;
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 24rpx 20rpx;
+  margin-bottom: 16rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+  transition: transform 0.2s;
+}
+
+.ranking-item.is-me {
+  background: linear-gradient(135deg, #FFF5F5, #FFE8E8);
+  border: 2rpx solid #FF6B6B;
+}
+
+.rank-num {
+  width: 60rpx;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.rank-medal {
+  font-size: 40rpx;
+}
+
+.rank-text {
+  font-size: 30rpx;
+  color: #888888;
+  font-weight: 600;
+}
+
+.rank-avatar {
+  margin: 0 20rpx;
+  flex-shrink: 0;
+}
+
+.avatar-placeholder {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4ECDC4, #44A08D);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.rank-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.rank-name {
+  font-size: 28rpx;
+  color: #2D3436;
+  font-weight: 500;
+}
+
+.rank-level {
+  font-size: 22rpx;
+  color: #888888;
+  margin-top: 4rpx;
+}
+
+.rank-score {
+  display: flex;
+  align-items: baseline;
+  flex-shrink: 0;
+}
+
+.score-num {
+  font-size: 36rpx;
+  color: #FF6B6B;
+  font-weight: 700;
+}
+
+.score-label {
+  font-size: 22rpx;
+  color: #888888;
+  margin-left: 4rpx;
+}
+
+/* 空状态 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 200rpx;
+}
+
+.empty-text {
+  font-size: 32rpx;
+  color: #888888;
+}
+
+.empty-hint {
+  font-size: 26rpx;
+  color: #BBBBBB;
+  margin-top: 16rpx;
+}
+
+/* 加载状态 */
+.loading-state {
+  display: flex;
+  justify-content: center;
+  padding-top: 200rpx;
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: #888888;
+}
+
+/* 我的排名 */
+.my-rank {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, #FF6B6B, #FF8E8E);
+  padding: 24rpx 40rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 -4rpx 16rpx rgba(255, 107, 107, 0.3);
+}
+
+.my-rank-label {
+  font-size: 28rpx;
+  color: #FFFFFF;
+}
+
+.my-rank-score {
+  font-size: 40rpx;
+  color: #FFFFFF;
+  font-weight: 700;
+}

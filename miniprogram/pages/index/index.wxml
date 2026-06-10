@@ -1,0 +1,10 @@
+<!--pages/index/index.wxml-->
+<view class="game-container">
+  <!-- 游戏画布 - 所有UI都绘制在Canvas内部 -->
+  <canvas type="2d" id="gameCanvas" class="game-canvas"
+    bindtouchstart="onTouchStart"
+    bindtouchmove="onTouchMove"
+    bindtouchend="onTouchEnd"
+    disable-scroll>
+  </canvas>
+</view>
