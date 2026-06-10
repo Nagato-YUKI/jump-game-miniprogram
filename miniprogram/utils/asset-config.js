@@ -165,14 +165,32 @@ function getSFXUrl(name) {
 }
 
 /**
- * 检查云存储是否已正确配置
+ * 检查是否在真机运行（非开发工具预览）
+ * 云存储URL在预览环境返回418，只有真机才能正常访问
+ * @returns {boolean}
+ */
+function isRealDevice() {
+  try {
+    var info = wx.getAccountInfoSync();
+    var env = info && info.miniProgram && info.miniProgram.envVersion;
+    // develop=开发版 trial=体验版 release=正式版
+    return env === 'release' || env === 'trial';
+  } catch(e) {
+    // getAccountInfoSync 不可用时默认走本地（安全策略）
+    return false;
+  }
+}
+
+/**
+ * 检查云存储是否可用（已配置 + 真机环境）
  * @returns {boolean}
  */
 function isCloudReady() {
   return USE_CLOUD &&
          CLOUD_BASE_URL &&
          !CLOUD_BASE_URL.includes('your-env-id') &&
-         CLOUD_BASE_URL.startsWith('http');
+         CLOUD_BASE_URL.startsWith('http') &&
+         isRealDevice();
 }
 
 module.exports = {
@@ -185,4 +203,5 @@ module.exports = {
   getBGMUrl: getBGMUrl,
   getSFXUrl: getSFXUrl,
   isCloudReady: isCloudReady,
+  isRealDevice: isRealDevice,
 };
