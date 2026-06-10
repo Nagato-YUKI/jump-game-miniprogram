@@ -1446,7 +1446,8 @@ class GameEngine {
     this.totalCoinsEarned += this.coins;
     this._saveTotalCoins();
 
-    if (this.animFrameId) { this.canvas.cancelAnimationFrame(this.animFrameId); this.animFrameId = null; }
+    // 不再停止gameLoop！让循环继续运行以渲染结束弹窗
+    // if (this.animFrameId) { this.canvas.cancelAnimationFrame(this.animFrameId); this.animFrameId = null; }
     this.scoreManager.updateBestScore(this.score);
 
     // Phase 7: 死亡爆炸粒子 + 强屏幕震动
@@ -1487,7 +1488,7 @@ class GameEngine {
 
     switch (itemType) {
       case 'coin':
-        this.coins++;
+        this.coins += 5;  // 每个金币+5
         this.totalCoinsCollected = (this.totalCoinsCollected || 0) + 1;  // 累计统计
         this.addScore(50); // 金币额外加50分
         this.combo++;

@@ -224,8 +224,10 @@ Page({
               self.gameEngine.playerName = name;
               // 保存到本地
               try { wx.setStorageSync('playerName', name); } catch (e) {}
-              self.gameEngine.render();  // 刷新显示
             }
+            // 关键修复：确保gameLoop持续运行，避免输入后画面卡住
+            self.gameEngine._ensureGameLoopRunning();
+            self.gameEngine.render();
           },
         });
         break;
