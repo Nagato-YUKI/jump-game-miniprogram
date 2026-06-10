@@ -211,6 +211,24 @@ Page({
       case 'shopPurchase':
         // 购买完成，余额已在引擎内更新
         break;
+      // 名称输入（使用微信原生弹窗）
+      case 'nameInput':
+        var self = this;
+        wx.showModal({
+          title: '输入你的名字',
+          editable: true,
+          placeholderText: '请输入名字（用于排行榜）',
+          success: function (res) {
+            if (res.confirm && res.content && res.content.trim()) {
+              var name = res.content.trim().substring(0, 12);  // 限制长度
+              self.gameEngine.playerName = name;
+              // 保存到本地
+              try { wx.setStorageSync('playerName', name); } catch (e) {}
+              self.gameEngine.render();  // 刷新显示
+            }
+          },
+        });
+        break;
     }
   },
 

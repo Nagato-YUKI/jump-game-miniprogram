@@ -148,7 +148,12 @@ class AudioManager {
 
     try {
       if (this._isMuted) return;
-      this._bgmAudio.resume();
+      // 微信InnerAudioContext没有resume方法，用play替代
+      if (typeof this._bgmAudio.resume === 'function') {
+        this._bgmAudio.resume();
+      } else if (typeof this._bgmAudio.play === 'function') {
+        this._bgmAudio.play();
+      }
     } catch (e) {
       console.warn('[AudioManager] resumeBGM 异常', e);
     }

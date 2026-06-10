@@ -301,7 +301,10 @@ class GameEngine {
     // ========== 商店系统 ==========
     this.showShop = false;                  // 是否显示商店
     this.totalCoinsEarned = 0;              // 累计获得金币（跨游戏持久化）
+    this.playerName = '';                    // 玩家名称（用于排行榜提交）
     this._loadTotalCoins();                 // 从本地存储加载累计金币
+    // 加载已保存的玩家名称
+    try { this.playerName = wx.getStorageSync('playerName') || ''; } catch (e) {}
   }
 
   /** 注入已加载的图片资源 */
@@ -412,6 +415,22 @@ class GameEngine {
 
     this._defineButtons();
     this.render();
+
+    // 重启游戏循环（确保从OVER/PAUSE状态回来后能持续渲染）
+    this._ensureGameLoopRunning();
+  }
+
+  /**
+   * 确保游戏循环在运行（用于从暂停/结束状态恢复）
+   */
+  _ensureGameLoopRunning() {
+    var self = this;
+    // 如果没有正在运行的循环，启动一个
+    if (!this.animFrameId) {
+      this.animFrameId = this.canvas.requestAnimationFrame(function () {
+        self.gameLoop();
+      });
+    }
   }
 
   // ========== Phase 6: 关卡主题系统方法 ==========
@@ -1458,14 +1477,15 @@ class GameEngine {
   // ========== Phase 3: 道具系统 ==========
 
   /**
-   * 处理道具收集
-   * @param {string} type - 道具类型
+   * 处理道具收集效果
+   * @param {string} itemType - 道具类型字符串 ('coin', 'shield' 等)
    */
-  handleItemCollect(item) {
-    var itemX = item.x + item.width / 2;
-    var itemY = item.y + item.height / 2;
+  handleItemCollect(itemType) {
+    // 获取道具位置（用于粒子效果）
+    var itemX = this.player.x + this.player.width / 2;
+    var itemY = this.player.y + this.player.height / 2;
 
-    switch (item.type) {
+    switch (itemType) {
       case 'coin':
         this.coins++;
         this.totalCoinsCollected = (this.totalCoinsCollected || 0) + 1;  // 累计统计
@@ -2286,6 +2306,7 @@ class GameEngine {
     if (this.state === GAME_STATE.OVER) {
       if (this._hitTest(x, y, this.buttons.restart)) return 'restart';
       if (this._hitTest(x, y, this.buttons.home)) return 'home';
+      if (this._hitTest(x, y, this.buttons.nameInput)) return 'nameInput';  // 名称输入
       if (this._hitTest(x, y, this.buttons.submitScore)) return 'submitScore';
       return null;
     }
@@ -2595,7 +2616,19 @@ class GameEngine {
     var startBtn = this.buttons.startGame;
     var startImg = this._img(IMG.BTN_START);
     if (startImg) {
+      // 画图片作为背景
       ctx.drawImage(startImg, startBtn.x, startBtn.y, startBtn.w, startBtn.h);
+      // 始终在图片上叠加文字（确保可见）
+      ctx.save();
+      ctx.font = 'bold 19px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.strokeStyle = 'rgba(100, 30, 30, 0.7)';
+      ctx.lineWidth = 3;
+      ctx.strokeText('开始游戏', startBtn.x + startBtn.w / 2, startBtn.y + startBtn.h / 2);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText('开始游戏', startBtn.x + startBtn.w / 2, startBtn.y + startBtn.h / 2);
+      ctx.restore();
     } else {
       ctx.save();
       // 外层深色描边（增强可见度）
@@ -3051,9 +3084,9 @@ class GameEngine {
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
     ctx.fillRect(0, 0, w, h);
 
-    // 面板尺寸：320x340（原300x320），圆角20px
+    // 面板尺寸：320x420（增加高度以容纳名称输入+提交按钮），圆角20px
     var panelW = Math.min(320, w - 30);
-    var panelH = 340;
+    var panelH = 420;
     var baseX = (w - panelW) / 2;
     var baseY = (h - panelH) / 2;
 
@@ -3168,8 +3201,6 @@ class GameEngine {
     this.buttons.home.w = btnW;
     this.buttons.home.h = btnH;
 
-    this.buttons.submitScore.y = btnY + btnH + 16;
-
     // 「再来一局」主按钮：140x48，红色渐变，脉冲呼吸效果
     var restartBtn = this.buttons.restart;
     this._renderButtonWithGradient(ctx, restartBtn, ['#FF6B6B', '#FF8E53'], '再来一局', 16, anim.pulseScale);
@@ -3181,19 +3212,69 @@ class GameEngine {
     this._roundRect(ctx, homeBtn.x, homeBtn.y, homeBtn.w, homeBtn.h, 12);
     ctx.fill();
     ctx.fillStyle = '#444444';
-    ctx.font = '16px sans-serif';
+    ctx.font = 'bold 15px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('返回首页', homeBtn.x + homeBtn.w / 2, homeBtn.y + homeBtn.h / 2);
     ctx.restore();
 
-    // ========== 提交分数链接 ==========
+    // ========== 名称输入区域（提交分数用）==========
+    var nameInputY = btnY + btnH + 14;
+    var inputW = panelW - 50;
+    var inputH = 38;
+    var inputX = mx + 25;
+
+    // 输入框背景
+    ctx.save();
+    ctx.fillStyle = '#F8F8F8';
+    this._roundRect(ctx, inputX, nameInputY, inputW, inputH, 10);
+    ctx.fill();
+    ctx.strokeStyle = '#DDD';
+    ctx.lineWidth = 1;
+    this._roundRect(ctx, inputX, nameInputY, inputW, inputH, 10);
+    ctx.stroke();
+
+    // 输入框内文字（显示当前名称或占位符）
+    var displayName = this.playerName || '点击输入你的名字';
+    ctx.fillStyle = this.playerName ? '#2D3436' : '#AAAAAA';
+    ctx.font = this.playerName ? 'bold 15px sans-serif' : '14px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(displayName, inputX + 12, nameInputY + inputH / 2);
+
+    // "编辑"图标提示
+    if (!this.playerName) {
+      ctx.fillStyle = '#4ECDC4';
+      ctx.font = '12px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText('\u270E 编辑', inputX + inputW - 10, nameInputY + inputH / 2);  // ✏ 编辑
+    }
+    ctx.restore();
+
+    // 记录输入框位置
+    this.buttons.nameInput = { x: inputX, y: nameInputY, w: inputW, h: inputH };
+
+    // 提交分数按钮
+    var submitBtnY = nameInputY + inputH + 10;
+    this.buttons.submitScore.y = submitBtnY;
+    this.buttons.submitScore.w = inputW;
+    this.buttons.submitScore.h = 36;
+    this.buttons.submitScore.x = inputX;
+
     var submitBtn = this.buttons.submitScore;
-    ctx.fillStyle = '#4ECDC4';
-    ctx.font = '13px sans-serif';
+    ctx.save();
+    var submitGrad = ctx.createLinearGradient(submitBtn.x, submitBtn.y, submitBtn.x, submitBtn.y + submitBtn.h);
+    submitGrad.addColorStop(0, '#4ECDC4');
+    submitGrad.addColorStop(1, '#44A08D');
+    ctx.fillStyle = submitGrad;
+    this._roundRect(ctx, submitBtn.x, submitBtn.y, submitBtn.w, submitBtn.h, submitBtn.h / 2);
+    ctx.fill();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 14px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('提交分数到排行榜 \u2197', submitBtn.x + submitBtn.w / 2, submitBtn.y + submitBtn.h / 2);  // ↗
+    ctx.fillText('\u2191\uFE0F 提交分数到排行榜', submitBtn.x + submitBtn.w / 2, submitBtn.y + submitBtn.h / 2);  // ↑️
+    ctx.restore();
 
     ctx.restore();  // 恢复globalAlpha
   }
