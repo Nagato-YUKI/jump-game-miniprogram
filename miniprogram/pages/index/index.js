@@ -148,6 +148,7 @@ Page({
   },
 
   _dispatchAction(action) {
+    if (!action) return;
     switch (action) {
       case 'startGame':
         this.setData({ gameState: 'playing', score: 0, level: 1, isNewRecord: false });
@@ -159,6 +160,20 @@ Page({
       case 'pause':
         this.togglePause();
         break;
+      // 暂停菜单按钮
+      case 'pauseContinue':
+        this.gameEngine.resume();
+        this.setData({ gameState: 'playing' });
+        break;
+      case 'pauseRestart':
+        this.setData({ gameState: 'playing', score: 0, level: 1, isNewRecord: false });
+        this.gameEngine.restart();
+        break;
+      case 'pauseHome':
+        this.setData({ gameState: 'idle', score: 0, level: 1, isNewRecord: false });
+        this.gameEngine.init();
+        break;
+      // 游戏结束按钮
       case 'restart':
         this.setData({ gameState: 'playing', score: 0, level: 1, isNewRecord: false });
         this.gameEngine.restart();
@@ -169,6 +184,14 @@ Page({
         break;
       case 'submitScore':
         this.submitScore();
+        break;
+      // 教程按钮
+      case 'tutorialNext':
+        this.gameEngine.render();  // 刷新教程界面显示下一步
+        break;
+      case 'tutorialComplete':
+      case 'tutorialSkip':
+        this.gameEngine.init();    // 回到开始界面
         break;
     }
   },

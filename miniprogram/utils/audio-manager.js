@@ -18,8 +18,8 @@ const SOUNDS = {
   BUTTON: 'button',
 };
 
-// 音频文件路径
-const BGM_PATH = '/audio/bgm.wav';
+// 音频文件路径（BGM使用MP3格式，音效使用WAV格式）
+const BGM_PATH = '/audio/bgm_cutie_patootie.mp3';
 const SFX_PATH_PREFIX = '/audio/sfx_';
 const SFX_PATH_SUFFIX = '.wav';
 
