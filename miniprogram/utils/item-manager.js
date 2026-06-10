@@ -34,7 +34,15 @@ function ItemManager(screenWidth, screenHeight) {
   this.screenHeight = screenHeight;
   this.items = [];        // 活跃道具列表
   this.activeEffects = {}; // 激活效果 { type, endTime }
+  this._lastLandedPlatform = null; // 当前落脚的平台（用于兜底收集）
 }
+
+/**
+ * 设置当前落脚平台（每帧更新）
+ */
+ItemManager.prototype.setLandedPlatform = function(platform) {
+  this._lastLandedPlatform = platform;
+};
 
 /**
  * 在指定平台上生成道具
@@ -118,20 +126,22 @@ ItemManager.prototype.update = function(cameraY, player) {
     return item.y - cameraY < self.screenHeight + 100 && !item.collected;
   });
 
-  // 检测碰撞
-  return this.checkCollision(player);
+  // 检测碰撞（传入当前落脚平台用于兜底收集）
+  return this.checkCollision(player, this._lastLandedPlatform);
 };
 
 /**
- * 检测角色与道具的碰撞
+ * 检测角色与道具的碰撞（增强版：支持平台落地自动收集）
  * @param {Object} player
+ * @param {Object} [landedPlatform] 玩家当前落脚的平台（可选，用于自动收集）
  * @returns {string|null} - 触发的道具类型或null
  */
-ItemManager.prototype.checkCollision = function(player) {
+ItemManager.prototype.checkCollision = function(player, landedPlatform) {
   var px = player.x, py = player.y;
   var pw = player.width, ph = player.height;
   var collectedType = null;
 
+  // 先检查普通碰撞
   for (var i = 0; i < this.items.length; i++) {
     var item = this.items[i];
     if (item.collected) continue;
@@ -140,16 +150,28 @@ ItemManager.prototype.checkCollision = function(player) {
     var iw = item.width, ih = item.height;
 
     // AABB 碰撞检测（放大判定范围让收集更容易）
-    var padding = item.type === 'coin' ? 8 : 4; // 金币额外宽容8px
-    if (px < ix + iw + padding && px + pw > ix - padding && py < iy + ih + padding && py + ph > iy - padding) {
+    var padding = item.type === 'coin' ? 12 : 6; // 金币额外宽容12px
+    if (px < ix + iw + padding && px + pw > ix - padding &&
+        py < iy + ih + padding && py + ph > iy - padding) {
       item.collected = true;
       collectedType = item.type;
-
-      // 触发道具效果
       this.activateEffect(item.type);
+      break; // 只收集一个每帧
+    }
+  }
 
-      // 只收集一个每帧（避免同时触发多个）
-      break;
+  // 如果普通碰撞没触发，尝试平台落地自动收集（兜底机制）
+  if (!collectedType && landedPlatform) {
+    for (var j = 0; j < this.items.length; j++) {
+      var pItem = this.items[j];
+      if (pItem.collected) continue;
+      // 检查道具是否在当前落脚平台上（Y坐标接近平台顶部）
+      if (Math.abs(pItem.y - (landedPlatform.y - pItem.height - 5)) < 15) {
+        pItem.collected = true;
+        collectedType = pItem.type;
+        this.activateEffect(pItem.type);
+        break;
+      }
     }
   }
 

@@ -608,33 +608,46 @@ class GameEngine {
     var w = this.screenWidth;
     var h = this.screenHeight;
 
-    // 半透明遮罩
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    // 半透明深色遮罩（与暂停菜单一致）
+    ctx.fillStyle = 'rgba(30, 40, 50, 0.75)';
     ctx.fillRect(0, 0, w, h);
 
-    // 中央面板
-    var pw = 280, ph = 360;
+    // 中央毛玻璃面板
+    var pw = 300, ph = 380;
     var px = (w - pw) / 2;
     var py = (h - ph) / 2;
 
-    // 面板背景
+    // 面板背景：半透明白色毛玻璃
     ctx.save();
-    ctx.fillStyle = '#FFFFFF';
-    this._roundRect(ctx, px, py, pw, ph, 16);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+    this._roundRect(ctx, px, py, pw, ph, 18);
     ctx.fill();
 
     // 面板阴影
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
-    ctx.shadowBlur = 20;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.12)';
+    ctx.shadowBlur = 25;
     ctx.shadowOffsetY = 8;
     ctx.fill();
     ctx.restore();
 
-    // 教程步骤内容
+    // 教程步骤内容（图标化描述）
     var steps = [
-      { title: '\u6B22\u8FCE\u6765\u5230\u8DF3\u8DC3\u95EF\u5171!', desc: '\u8FD9\u662F\u4E00\u4E2A\u7B80\u5355\u7684\u8DF3\u8DC3\u6E38\u620F\n\u4F60\u7684\u89D2\u8272\u4F1A\u81EA\u52A8\u8DF3\u8DC3\n\u4F60\u53EA\u9700\u8981\u63A7\u5236\u5DE6\u53F3\u65B9\u5411', btn: '\u4E0B\u4E00\u6B65' },
-      { title: '\u64CD\u4F5C\u65B9\u5F0F', desc: '\u6309\u4F4F\u5C4F\u5E55\u5DE6\u4FA7 \u2192 \u5411\u5DE6\u79FB\u52A8\n\u6309\u4F4F\u5C4F\u5E53\u53F3\u4FA7 \u2192 \u5411\u53F3\u79FB\u52A8\n\u677E\u5F00\u624B\u6307 \u2192 \u7F13\u6162\u505C\u6B62', btn: '\u6211\u5B66\u4F1A\u4E86' },
-      { title: '\u9053\u5177\u8BF4\u660E', desc: '\uD83E\uDE99 \u91D1\u5E01 = \u5F97\u5206\n\uD83D\uDEE1 \u62A4\u76FE = \u514D\u6B7B\u4E00\u6B21\n\u2191\u2191 \u5F39\u7C27\u5E73\u53F0 = \u8DF3\u5F97\u66F4\u9AD8\n\u26A0\uFE0F \u6613\u788E\u5E73\u53F0 = \u5C0F\u5FC3\u8E29\u4E0A\u53BB\u4F1A\u788E', btn: '\u5F00\u59CB\u6E38\u620F!' },
+      { title: '\u6B22\u8FCE\u6765\u5230\u8DF3\u8DC3\u95EF\u5171!', desc: [
+        { icon: '\u2605', text: '\u7B80\u5355\u6613\u4E0A\u624B\u7684\u8DF3\u8DC3\u6E38\u620F' },
+        { icon: '\u25B6', text: '\u89D2\u8272\u4F1A\u81EA\u52A8\u8DF3\u8DC3' },
+        { icon: '\u270B', text: '\u63A7\u5236\u5DE6\u53F3\u65B9\u5411\u5373\u53EF' },
+      ], btn: '\u4E0B\u4E00\u6B65 \u25B6' },
+      { title: '\u64CD\u4F5C\u65B9\u5F0F', desc: [
+        { icon: '\u25C0', text: '\u6309\u4F4F\u5C4F\u5E55\u5DE6\u4FA7 \u2192 \u5411\u5DE6\u79FB\u52A8' },
+        { icon: '\u25B6', text: '\u6309\u4F4F\u5C4F\u5E53\u53F3\u4FA7 \u2192 \u5411\u53F3\u79FB\u52A8' },
+        { icon: '\u270A', text: '\u677E\u5F00\u624B\u6307 \u2192 \u7F13\u6162\u505C\u6B62' },
+      ], btn: '\u6211\u5B66\u4F1A\u4E86!' },
+      { title: '\u9053\u5177\u8BF4\u660E', desc: [
+        { icon: '\uD83D\uDFE0', color: '#FFD700', text: '\u91D1\u5E01 \u2014 \u6536\u96C6\u5F97\u5206' },
+        { icon: '\uD83D\uDEE1', color: '#4ECDC4', text: '\u62A4\u76FE \u2014 \u514D\u6B7B\u4E00\u6B21' },
+        { icon: '\u2191\u2191', color: '#FF8C00', text: '\u5F39\u7C27\u5E73\u53F0 \u2014 \u8DF3\u5F97\u66F4\u9AD8' },
+        { icon: '\u26A0\uFE0F', color: '#E74C3C', text: '\u6613\u788E\u5E73\u53F0 \u2014 \u5C0F\u5FC3\u8E29\u788E' },
+      ], btn: '\u5F00\u59CB\u6E38\u620F!' },
     ];
 
     var step = steps[this.tutorialStep] || steps[0];
@@ -647,51 +660,68 @@ class GameEngine {
     ctx.fillText(step.title, w / 2, py + 45);
 
     // 分隔线
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)';
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.06)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(px + 30, py + 70);
-    ctx.lineTo(px + pw - 30, py + 70);
+    ctx.moveTo(px + 28, py + 72);
+    ctx.lineTo(px + pw - 28, py + 72);
     ctx.stroke();
 
-    // 描述文字（支持多行）
-    ctx.fillStyle = '#555555';
-    ctx.font = '15px sans-serif';
-    var lines = step.desc.split('\n');
-    var lineH = 26;
-    var textStartY = py + 115;
-    for (var li = 0; li < lines.length; li++) {
-      ctx.fillText(lines[li], w / 2, textStartY + li * lineH);
+    // 描述列表（图标+文字，带背景条）
+    var lineH = 44;
+    var listStartY = py + 92;
+    for (var li = 0; li < step.desc.length; li++) {
+      var entry = step.desc[li];
+      var ly = listStartY + li * lineH;
+
+      // 每行浅色背景条
+      ctx.save();
+      ctx.fillStyle = 'rgba(78, 205, 196, 0.06)';
+      this._roundRect(ctx, px + 20, ly - 14, pw - 40, 36, 10);
+      ctx.fill();
+      ctx.restore();
+
+      // 图标
+      ctx.font = 'bold 18px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = entry.color || '#4ECDC4';
+      ctx.fillText(entry.icon, px + 32, ly + 4);
+
+      // 文字
+      ctx.fillStyle = '#333333';
+      ctx.font = '15px sans-serif';
+      ctx.fillText(entry.text, px + 60, ly + 4);
     }
 
     // 步骤指示器（小圆点）
     var dotCX = w / 2;
-    var dotCY = py + ph - 100;
+    var dotCY = py + ph - 95;
     for (var di = 0; di < steps.length; di++) {
       ctx.beginPath();
       ctx.arc(dotCX + (di - 1) * 20, dotCY, 5, 0, Math.PI * 2);
       if (di === this.tutorialStep) {
         ctx.fillStyle = '#4ECDC4';
       } else {
-        ctx.fillStyle = 'rgba(200, 200, 200, 0.5)';
+        ctx.fillStyle = 'rgba(180, 190, 200, 0.45)';
       }
       ctx.fill();
     }
 
-    // 主按钮
-    var btnY = py + ph - 65;
-    var btnH = 44;
+    // 主按钮（与开始页按钮一致的风格）
+    var btnY = py + ph - 62;
+    var btnH = 46;
     ctx.save();
-    var grad = ctx.createLinearGradient(px + 40, btnY, px + pw - 40, btnY + btnH);
+    var grad = ctx.createLinearGradient(px + 35, btnY, px + pw - 35, btnY + btnH);
     grad.addColorStop(0, '#4ECDC4');
     grad.addColorStop(1, '#44A08D');
     ctx.fillStyle = grad;
-    this._roundRect(ctx, px + 40, btnY, pw - 80, btnH, 12);
+    this._roundRect(ctx, px + 35, btnY, pw - 70, btnH, 14);
     ctx.fill();
 
     // 按钮阴影
-    ctx.shadowColor = 'rgba(78, 205, 196, 0.3)';
-    ctx.shadowBlur = 10;
+    ctx.shadowColor = 'rgba(78, 205, 196, 0.35)';
+    ctx.shadowBlur = 12;
     ctx.shadowOffsetY = 4;
     ctx.fill();
     ctx.restore();
@@ -704,11 +734,11 @@ class GameEngine {
     ctx.fillText(step.btn, w / 2, btnY + btnH / 2);
 
     // "跳过教程"链接（右上角）
-    ctx.fillStyle = '#777777';
-    ctx.font = '13px sans-serif';
+    ctx.fillStyle = '#888888';
+    ctx.font = '12px sans-serif';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'top';
-    ctx.fillText('\u8DF3\u8FC7\u6559\u7A0B', px + pw - 15, py + 12);  // 跳过教程
+    ctx.fillText('\u8DF3\u8FC7\u6559\u7A0B \u00BB', px + pw - 15, py + 14);  // 跳过教程 »
   }
 
   /**
@@ -1007,6 +1037,9 @@ class GameEngine {
         } else {
           this.player.y = p.y - this.player.height;
         }
+
+        // 记录当前落脚的平台（用于道具兜底收集）
+        this.itemManager.setLandedPlatform(p);
 
         // Phase 2: 设置着陆标志（用于挤压动画）
         this.player.justLanded = true;
@@ -2293,16 +2326,30 @@ class GameEngine {
 
     // ========== 副标题区域 ==========
     var subtitleY = titleAreaTop + titleAreaHeight + 20;
-    ctx.fillStyle = '#555555';
-    ctx.font = '14px sans-serif';
+
+    // 副标题背景条（增强可读性）
+    ctx.save();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    this._roundRect(ctx, w / 2 - 140, subtitleY - 14, 280, 28, 14);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.fillStyle = '#333333';
+    ctx.font = '13px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('触摸屏幕左右两侧控制角色移动', w / 2, subtitleY);
 
-    // 操作指引：增大到14px，带图标
-    var guideY = subtitleY + 26;
+    // 操作指引：带图标和背景
+    var guideY = subtitleY + 32;
+    ctx.save();
+    ctx.fillStyle = 'rgba(78, 205, 196, 0.12)';
+    this._roundRect(ctx, w / 2 - 80, guideY - 12, 160, 26, 13);
+    ctx.fill();
+    ctx.restore();
+
     ctx.fillStyle = '#444444';
-    ctx.font = '14px sans-serif';
+    ctx.font = '15px sans-serif';
     ctx.fillText('\u25C0  \uD83D\uDC4A  \u25B6', w / 2, guideY);  // ◀ 🖐️ ►
 
     // ========== 按钮区域 ==========

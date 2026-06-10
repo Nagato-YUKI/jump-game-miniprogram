@@ -140,7 +140,7 @@ Page({
     if (!this.gameEngine) return;
     var touch = e.touches[0];
     var action = this.gameEngine.handleTouch(touch.x, touch.y);
-    if (action === 'pause') { this._dispatchAction(action); }
+    if (action) { this._dispatchAction(action); }
   },
 
   onTouchEnd() {
@@ -184,6 +184,11 @@ Page({
         break;
       case 'submitScore':
         this.submitScore();
+        break;
+      // 音量调节
+      case 'volumeChange':
+        // volumeChange 由 gameEngine.handleTouch 内部直接处理音量
+        // 这里只需触发页面刷新（如有需要）
         break;
       // 教程按钮
       case 'tutorialNext':
