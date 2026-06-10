@@ -249,8 +249,9 @@ Page({
   submitScore() {
     if (!this.scoreManager) return;
     var self = this;
+    var playerName = this.gameEngine.playerName || '';
     wx.showLoading({ title: '提交中...' });
-    this.scoreManager.submitScore(this.data.score, this.data.level)
+    this.scoreManager.submitScore(this.data.score, this.data.level, playerName)
       .then(function () {
         wx.hideLoading();
         wx.showToast({ title: '提交成功', icon: 'success' });

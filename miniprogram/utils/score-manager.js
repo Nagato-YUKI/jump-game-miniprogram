@@ -45,13 +45,13 @@ class ScoreManager {
   }
 
   // 提交分数到云端
-  submitScore(score, level) {
+  submitScore(score, level, name) {
     return new Promise((resolve, reject) => {
       wx.cloud.callFunction({
         name: 'gameFunctions',
         data: {
           type: 'submitScore',
-          data: { score, level },
+          data: { score, level, name },
         },
         success: (res) => {
           if (res.result && res.result.success) {

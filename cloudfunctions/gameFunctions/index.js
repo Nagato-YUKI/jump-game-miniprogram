@@ -5,15 +5,15 @@ const _ = db.command;
 
 // 提交分数
 const submitScore = async (data, wxContext) => {
-  const { score, level } = data;
+  const { score, level, name } = data;
   const openid = wxContext.OPENID;
-  
+
   try {
     // 查询是否已有记录
     const userRecord = await db.collection('scores')
       .where({ openid })
       .get();
-    
+
     if (userRecord.data.length > 0) {
       // 更新最高分
       const existing = userRecord.data[0];
@@ -24,6 +24,9 @@ const submitScore = async (data, wxContext) => {
       if (level) {
         updateData.level = Math.max(existing.level || 0, level);
       }
+      if (name) {
+        updateData.name = name;
+      }
       await db.collection('scores')
         .doc(existing._id)
         .update({ data: updateData });
@@ -32,6 +35,7 @@ const submitScore = async (data, wxContext) => {
       await db.collection('scores').add({
         data: {
           openid,
+          name: name || '匿名玩家',
           score,
           level: level || 1,
           createTime: db.serverDate(),
@@ -39,7 +43,7 @@ const submitScore = async (data, wxContext) => {
         }
       });
     }
-    
+
     return { success: true };
   } catch (e) {
     return { success: false, errMsg: e };
