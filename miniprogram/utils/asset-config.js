@@ -41,7 +41,7 @@ var USE_CLOUD = true;
  *
  * 示例: https://your-env-id.ap-shanghai.file.myqcloud.com/
  */
-var CLOUD_BASE_URL = 'https://your-env-id.ap-shanghai.file.myqcloud.com/';
+var CLOUD_BASE_URL = 'https://636c-cloud1-d3gy3j4u472a74eb5-1441215999.tcb.qcloud.la/';
 
 // ==================== 音频资源配置 ====================
 

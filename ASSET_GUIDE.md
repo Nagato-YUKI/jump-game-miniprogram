@@ -346,5 +346,77 @@ def truncate_mp3(input_path, target_kb=180):
 
 ---
 
+## 十、自动化工具
+
+项目提供3个自动化脚本，位于项目根目录：
+
+### 1. cloud_upload.py — 云存储自动上传
+
+```bash
+# 安装依赖（只需一次）
+pip install tencentcos-sdk-python
+
+# 配置密钥（在 .env 中添加）
+COS_SECRET_ID=你的腾讯云SecretId
+COS_SECRET_KEY=你的腾讯云SecretKey
+# 获取: https://console.cloud.tencent.com/cam/capi
+
+# 使用
+python cloud_upload.py              # 上传所有资源到云存储
+python cloud_upload.py --audio-only # 只上传音频
+python cloud_upload.py --images     # 只上传图片
+python cloud_upload.py --dry-run    # 预览要上传的文件列表
+```
+
+**工作原理**: 通过腾讯云COS SDK直接上传文件到微信云存储底层桶。
+
+### 2. restore_quality.py — 资源质量恢复与归档
+
+```bash
+# 查看当前资源状态（哪些被压缩了、是否有原稿）
+python restore_quality.py --list
+
+# 归档当前文件为「原始版本」（在 originals/ 目录永久保存）
+python restore_quality.py --archive
+
+# 压缩本地文件以符合主包限制
+python restore_quality.py --compress
+
+# 完整流程：归档 → 压缩 → 报告
+python restore_quality.py --all
+```
+
+**目录结构**:
+```
+originals/              ← 高清原稿归档（不进入小程序包，不上传GitHub）
+├── audio/             ← 原始音频文件
+└── images/            ← 原始高清图片
+    ├── player/
+    └── platforms/
+```
+
+### 3. generate_images.py — AI素材生成
+
+```bash
+# 使用 RunningHub API 生成游戏素材
+python generate_images.py
+# 输出到 miniprogram/images/{category}/
+```
+
+### 推荐的工作流程
+
+```
+新增素材时的标准流程:
+
+1. python generate_images.py          → AI生成高清素材
+2. python restore_quality.py --archive → 归档当前版本（保护已有素材）
+3. python cloud_upload.py             → 上传新素材到云存储
+4. 编辑 asset-config.js               → 注册新资源路径
+5. 验证主包大小 < 2MB
+6. git commit + push                  → 提交代码
+```
+
+---
+
 > 最后更新: 2026-06-11
 > 适用版本: Phase 7+

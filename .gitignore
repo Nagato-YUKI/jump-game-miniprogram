@@ -17,3 +17,6 @@ __pycache__/
 # 系统文件
 .DS_Store
 Thumbs.db
+
+# 高清原稿归档（体积大，不上传GitHub）
+originals/
