@@ -810,7 +810,7 @@ class GameEngine {
     } catch (e) {
       this.totalCoinsEarned = 0;
     }
-  },
+  }
 
   /** 保存累计金币到本地存储 */
   _saveTotalCoins() {
