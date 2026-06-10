@@ -1,57 +1,43 @@
 /**
- * 音频管理器 - 微信小程序游戏专用
- * 管理 BGM 和音效的播放/暂停/音量控制
+ * 音频管理器 - 微信小程序专用
  *
- * 加载策略: 云存储URL优先 → 失败自动回退本地文件
+ * 加载策略: wx.cloud.downloadFile() 云端优先 → 失败自动回退本地文件
+ * 兼容所有环境: 模拟器 / 真机调试 / 体验版 / 正式版
  */
 
 var assetConfig = require('./asset-config');
 
-// 音效名称常量
-const SOUNDS = {
+/**
+ * 音效名称常量（与 SFX_CONFIGS 的 key 对应）
+ */
+var SOUNDS = {
   JUMP: 'jump',
   SPRING: 'spring',
   BREAK: 'break',
   COIN: 'coin',
-  ITEM_SHIELD: 'shield',
-  ITEM_SPRING: 'spring_shoe',
-  ITEM_MAGNET: 'magnet',
+  SHIELD: 'shield',
+  SPRING_SHOE: 'spring_shoe',
+  MAGNET: 'magnet',
   HURT: 'hurt',
-  GAME_OVER: 'gameover',
-  NEW_RECORD: 'newrecord',
+  GAMEOVER: 'gameover',
+  NEWRECORD: 'newrecord',
   BUTTON: 'button',
 };
 
 class AudioManager {
   constructor() {
-    /** @type {InnerAudioContext|null} BGM 音频实例 */
     this._bgmAudio = null;
-
-    /** @type {Object<string, InnerAudioContext>} 音效实例池 */
     this._sfxPool = {};
-
-    /** @type {boolean} 是否已初始化 */
     this._initialized = false;
-
-    /** @type {boolean} 静音状态 */
     this._isMuted = false;
-
-    /** @type {number} BGM 音量 (0~1) */
-    this._bgmVolume = 1.0;
-
-    /** @type {number} 音效音量 (0~1) */
+    this._bgmVolume = 0.6;
     this._sfxVolume = 1.0;
-
-    /** @type {Function|null} 切后台回调引用 */
-    this._onHideHandler = null;
-
-    /** @type {Function|null} 回前台回调引用 */
-    this._onShowHandler = null;
+    this._currentBGM = null;
   }
 
-  // ==================== 公开属性（只读）====================
+  // ==================== 公开API ====================
 
-  get isMuted() {
+  get muted() {
     return this._isMuted;
   }
 
@@ -63,126 +49,143 @@ class AudioManager {
     return this._sfxVolume;
   }
 
-  // ==================== 核心方法 ====================
-
   /**
    * 初始化音频上下文，加载所有音频资源
-   * 策略: 云存储优先 → onError 回退本地
+   * 策略: 云端下载(wx.cloud.downloadFile) → onError 回退本地
    */
   init() {
     if (this._initialized) {
       console.warn('[AudioManager] 已初始化，跳过重复调用');
-      return;
+      return Promise.resolve();
     }
 
+    var self = this;
+    self._initialized = true;
+
     try {
-      var self = this;
-      var cloudAvailable = assetConfig.USE_CLOUD &&
-        assetConfig.CLOUD_BASE_URL &&
-        !assetConfig.CLOUD_BASE_URL.includes('your-env-id');
+      var cloudAvailable = assetConfig.USE_CLOUD && assetConfig.CLOUD_ENV_ID;
       console.log('[AudioManager] 云存储模式:', cloudAvailable ? '启用(云端优先)' : '未配置(使用本地)');
 
       // 创建 BGM 实例
       this._bgmAudio = wx.createInnerAudioContext();
-      this._loadWithFallback(this._bgmAudio, assetConfig.getBGMUrl(), assetConfig.BGM_CONFIG.localPath, function(audio, finalUrl) {
-        audio.loop = true;
-        audio.volume = self._isMuted ? 0 : self._bgmVolume;
-        audio.obeyMuteSwitch = false;
-      });
+
+      // 加载 BGM
+      var bgmPromise = this._loadAudioWithFallback(
+        this._bgmAudio,
+        assetConfig.BGM_CONFIG.fileID,
+        assetConfig.BGM_CONFIG.localPath,
+        function (audio, finalUrl) {
+          audio.loop = true;
+          audio.volume = self._isMuted ? 0 : self._bgmVolume;
+          audio.obeyMuteSwitch = false;
+          self._currentBGM = finalUrl;
+        }
+      );
 
       // 预创建所有音效实例
       var soundNames = Object.values(SOUNDS);
-      for (var i = 0; i < soundNames.length; i++) {
-        (function(name) {
-          var sfxAudio = wx.createInnerAudioContext();
-          var cloudUrl = assetConfig.getSFXUrl(name);
-          var localUrl = (assetConfig.SFX_CONFIGS[name] || {}).localPath || '';
+      var sfxPromises = [];
 
-          self._loadWithFallback(sfxAudio, cloudUrl, localUrl, function(audio) {
-            audio.volume = self._isMuted ? 0 : self._sfxVolume;
-            audio.obeyMuteSwitch = false;
-            self._sfxPool[name] = audio;
-          });
+      for (var i = 0; i < soundNames.length; i++) {
+        (function (name) {
+          var cfg = assetConfig.SFX_CONFIGS[name];
+          if (!cfg) return;
+
+          var sfxAudio = wx.createInnerAudioContext();
+          sfxPromises.push(self._loadAudioWithFallback(
+            sfxAudio,
+            cfg.fileID,
+            cfg.localPath,
+            function (audio) {
+              audio.volume = self._isMuted ? 0 : self._sfxVolume;
+              audio.obeyMuteSwitch = false;
+              self._sfxPool[name] = audio;
+            }
+          ));
         })(soundNames[i]);
       }
 
-      // 注册小程序生命周期监听
-      this._registerAppLifecycle();
+      // 等待所有音频加载完成
+      return Promise.all([bgmPromise].concat(sfxPromises)).then(function () {
+        console.log('[AudioManager] 初始化完成，共加载', Object.keys(self._sfxPool).length, '个音效');
+      });
 
-      this._initialized = true;
-      console.log('[AudioManager] 初始化完成，共加载 ' + soundNames.length + ' 个音效');
     } catch (e) {
-      console.error('[AudioManager] 初始化异常', e);
+      console.error('[AudioManager] 初始化异常:', e);
+      return Promise.reject(e);
     }
   }
 
   /**
-   * 带回退机制的加载：先试云URL，失败则用本地路径
-   * @private
-   * @param {InnerAudioContext} audio - 音频实例
-   * @param {string} primaryUrl - 首选URL（云存储）
-   * @param {string} fallbackUrl - 回退URL（本地）
-   * @param {Function} onSuccess - 加载成功回调 (audio, finalUrl)
+   * 云端下载 + 本地回退的音频加载流程
    */
-  _loadWithFallback(audio, primaryUrl, fallbackUrl, onSuccess) {
-    var hasTriedFallback = false;
+  _loadAudioWithFallback(audio, fileID, localPath, onReady) {
     var self = this;
 
-    function doLoad(url, isFallback) {
-      audio.src = url;
-      audio.onCanplay(function() {
-        // 成功加载，清除错误回调避免内存泄漏
-        audio.onError(function() {});
-        if (onSuccess) onSuccess(audio, url);
-      });
-      audio.onError(function(err) {
-        if (!hasTriedFallback && fallbackUrl) {
-          hasTriedFallback = true;
-          console.warn('[AudioManager] 云加载失败，回退本地:', isFallback ? '(已回退)' : err);
-          doLoad(fallbackUrl, true);
-        } else {
-          console.error('[AudioManager] 加载完全失败:', err);
-        }
-      });
+    if (!assetConfig.USE_CLOUD || !fileID) {
+      return this._setAudioSrc(audio, localPath, onReady);
     }
 
-    // 如果云存储未配置或主URL与回退相同，直接用本地
-    if (!primaryUrl || primaryUrl === fallbackUrl || !assetConfig.isCloudReady()) {
-      doLoad(fallbackUrl, true);
-    } else {
-      doLoad(primaryUrl, false);
-    }
+    // 尝试云端下载
+    return assetConfig.downloadFromCloud(fileID)
+      .then(function (tempFilePath) {
+        return self._setAudioSrc(audio, tempFilePath, onReady);
+      })
+      .catch(function () {
+        console.log('[AudioManager] 云下载失败，回退本地:', localPath);
+        return self._setAudioSrc(audio, localPath, onReady);
+      });
   }
 
   /**
-   * 播放背景音乐（循环）
+   * 设置音频源并等待就绪
    */
+  _setAudioSrc(audio, src, onReady) {
+    return new Promise(function (resolve) {
+      audio.src = src;
+      // 等待 canplay 或 error
+      var onCanPlay = function () {
+        audio.offCanplay(onCanPlay);
+        audio.offError(onError);
+        if (onReady) onReady(audio, src);
+        resolve();
+      };
+      var onError = function (err) {
+        audio.offCanplay(onCanPlay);
+        audio.offError(onError);
+        console.warn('[AudioManager] 音频加载失败:', src, err.errMsg || err);
+        resolve(); // 失败也resolve，不阻塞
+      };
+      audio.onCanplay(onCanPlay);
+      audio.onError(onError);
+
+      // 超时保护：3秒后强制resolve
+      setTimeout(function () {
+        audio.offCanplay(onCanPlay);
+        audio.offError(onError);
+        if (onReady) onReady(audio, src);
+        resolve();
+      }, 3000);
+    });
+  }
+
+  // ==================== 播放控制 ====================
+
   playBGM() {
-    if (!this._bgmAudio || !this._initialized) return;
+    if (!this._bgmAudio || !this._currentBGM) return;
     try {
       if (this._isMuted) return;
+      this._bgmAudio.volume = this._bgmVolume;
       this._bgmAudio.play();
-    } catch (e) {
-      console.warn('[AudioManager] playBGM 异常', e);
-    }
+    } catch (e) { console.warn('[AudioManager] playBGM 异常', e); }
   }
 
-  /**
-   * 暂停背景音乐
-   */
+  stopBGM() {
+    if (!this._bgmAudio) return;
+    try { this._bgmAudio.stop(); } catch (e) {}
+  }
+
   pauseBGM() {
-    if (!this._bgmAudio || !this._initialized) return;
-    try {
-      this._bgmAudio.pause();
-    } catch (e) {
-      console.warn('[AudioManager] pauseBGM 异常', e);
-    }
-  }
-
-  /**
-   * 恢复背景音乐
-   */
-  resumeBGM() {
     if (!this._bgmAudio || !this._initialized) return;
     try {
       if (this._isMuted) return;
@@ -191,129 +194,72 @@ class AudioManager {
       } else if (typeof this._bgmAudio.play === 'function') {
         this._bgmAudio.play();
       }
-    } catch (e) {
-      console.warn('[AudioManager] resumeBGM 异常', e);
-    }
+    } catch (e) { console.warn('[AudioManager] resumeBGM 异常', e); }
   }
 
-  /**
-   * 停止背景音乐
-   */
-  stopBGM() {
-    if (!this._bgmAudio || !this._initialized) return;
-    try {
-      this._bgmAudio.stop();
-    } catch (e) {
-      console.warn('[AudioManager] stopBGM 异常', e);
-    }
-  }
-
-  /**
-   * 播放指定音效
-   * @param {string} name - 音效名称（使用 SOUNDS 常量）
-   */
   playSound(name) {
-    if (!this._initialized || this._isMuted) return;
+    if (this._isMuted) return;
     var audio = this._sfxPool[name];
-    if (!audio) {
-      console.warn('[AudioManager] 未找到音效: ' + name);
-      return;
-    }
+    if (!audio) return;
     try {
+      audio.stop();
       audio.seek(0);
       audio.play();
     } catch (e) {
-      console.warn('[AudioManager] playSound [' + name + '] 异常', e);
+      try { audio.play(); } catch (e2) {}
     }
   }
 
-  /**
-   * 设置 BGM 音量
-   * @param {number} volume - 音量值 (0~1)
-   */
-  setBGMVolume(volume) {
-    this._bgmVolume = Math.max(0, Math.min(1, volume));
+  // ==================== 音量/静音 ====================
+
+  setMuted(muted) {
+    this._isMuted = !!muted;
+    if (this._bgmAudio) {
+      this._bgmAudio.volume = this._isMuted ? 0 : this._bgmVolume;
+    }
+    for (var key in this._sfxPool) {
+      if (this._sfxPool[key]) {
+        this._sfxPool[key].volume = this._isMuted ? 0 : this._sfxVolume;
+      }
+    }
+  }
+
+  setBGMVolume(vol) {
+    this._bgmVolume = Math.max(0, Math.min(1, vol));
     if (this._bgmAudio && !this._isMuted) {
       this._bgmAudio.volume = this._bgmVolume;
     }
   }
 
-  /**
-   * 设置音效音量
-   * @param {number} volume - 音量值 (0~1)
-   */
-  setSFXVolume(volume) {
-    this._sfxVolume = Math.max(0, Math.min(1, volume));
+  setSFXVolume(vol) {
+    this._sfxVolume = Math.max(0, Math.min(1, vol));
     if (!this._isMuted) {
       for (var key in this._sfxPool) {
-        this._sfxPool[key].volume = this._sfxVolume;
+        if (this._sfxPool[key]) this._sfxPool[key].volume = this._sfxVolume;
       }
     }
   }
 
-  /**
-   * 设置静音模式
-   * @param {boolean} muted - 是否静音
-   */
-  setMuted(muted) {
-    this._isMuted = muted;
-    var targetVol = muted ? 0 : this._bgmVolume;
-    var sfxTargetVol = muted ? 0 : this._sfxVolume;
-    if (this._bgmAudio) {
-      this._bgmAudio.volume = targetVol;
-    }
-    for (var key in this._sfxPool) {
-      this._sfxPool[key].volume = sfxTargetVol;
-    }
-    console.log('[AudioManager] 静音模式: ' + (muted ? '开启' : '关闭'));
+  toggleMute() {
+    this.setMuted(!this._isMuted);
+    return this._isMuted;
   }
 
-  /**
-   * 销毁所有音频资源，释放内存
-   */
+  // ==================== 销毁 ====================
+
   destroy() {
-    try {
-      this._unregisterAppLifecycle();
-      if (this._bgmAudio) {
-        this._bgmAudio.stop();
-        this._bgmAudio.destroy();
-        this._bgmAudio = null;
+    this.stopBGM();
+    if (this._bgmAudio) { try { this._bgmAudio.destroy(); } catch(e) {} this._bgmAudio = null; }
+    for (var key in this._sfxPool) {
+      if (this._sfxPool[key]) {
+        try { this._sfxPool[key].destroy(); } catch(e) {}
+        delete this._sfxPool[key];
       }
-      for (var key in this._sfxPool) {
-        this._sfxPool[key].stop();
-        this._sfxPool[key].destroy();
-      }
-      this._sfxPool = {};
-      this._initialized = false;
-      console.log('[AudioManager] 已销毁');
-    } catch (e) {
-      console.error('[AudioManager] destroy 异常', e);
     }
-  }
-
-  // ==================== 内部方法 ====================
-
-  _registerAppLifecycle() {
-    var app = getApp();
-    this._onHideHandler = function() { this.pauseBGM(); }.bind(this);
-    this._onShowHandler = function() { this.resumeBGM(); }.bind(this);
-
-    if (app.onHide) app.onHide(this._onHideHandler);
-    if (app.onShow) app.onShow(this._onShowHandler);
-
-    if (wx.onAppHide && wx.onAppShow) {
-      wx.onAppHide(this._onHideHandler);
-      wx.onAppShow(this._onShowHandler);
-    }
-  }
-
-  _unregisterAppLifecycle() {
-    this._onHideHandler = null;
-    this._onShowHandler = null;
+    this._initialized = false;
   }
 }
 
-// 导出音效常量
-AudioManager.SOUNDS = SOUNDS;
-
-module.exports = AudioManager;
+// 导出单例和常量
+module.exports = new AudioManager();
+module.exports.SOUNDS = SOUNDS;
