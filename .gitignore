@@ -1,6 +1,7 @@
 # 隐私配置
 .env
 project.private.config.json
+project.config.json
 
 # 技术文档（开发用，不推送）
 .trae/specs/
