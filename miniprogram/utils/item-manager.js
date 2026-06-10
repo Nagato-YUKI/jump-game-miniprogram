@@ -10,6 +10,10 @@ var ITEM_TYPES = {
   SPRING_SHOE: 'spring_shoe', // 弹簧鞋 - 增强跳跃力(5秒)
   MAGNET: 'magnet',       // 磁铁 - 吸引金币(8秒)
   CLOUD: 'cloud',         // 减速云 - 降低重力(3秒)
+  JETPACK: 'jetpack',     // 喷气背包 - 向上飞行3秒
+  DOUBLE_SCORE: 'double_score', // 双倍得分 - 10秒内得分翻倍
+  INVINCIBLE: 'invincible',   // 无敌星 - 5秒无敌
+  DIAMOND: 'diamond',     // 钻石宝石 - 即时+200分
 };
 
 // 道具配置
@@ -19,6 +23,10 @@ var ITEM_CONFIG = {
   spring_shoe: { width: 26, height: 26, duration: 5000, color: '#FF8C00', floatOffset: -3 },
   magnet: { width: 26, height: 26, duration: 8000, range: 120, color: '#E74C3C', floatOffset: -2 },
   cloud: { width: 60, height: 24, duration: 3000, color: '#FFE4E1', floatOffset: 0 },
+  jetpack: { width: 30, height: 36, duration: 3000, color: '#FF4500', floatOffset: -5, score: 0 },
+  double_score: { width: 28, height: 28, duration: 10000, color: '#FFD700', floatOffset: -2, score: 0, multiplier: 2 },
+  invincible: { width: 32, height: 32, duration: 5000, color: '#FF69B4', floatOffset: -3, score: 0 },
+  diamond: { width: 22, height: 22, duration: 0, color: '#9B59B6', floatOffset: -1, score: 200 },
 };
 
 function ItemManager(screenWidth, screenHeight) {
@@ -47,17 +55,23 @@ ItemManager.prototype.spawnOnPlatform = function(platform, level) {
   if (level <= 3) {
     type = ITEM_TYPES.COIN; // 低关卡只有金币
   } else if (level <= 7) {
-    if (typeRand < 0.70) type = ITEM_TYPES.COIN;
-    else if (typeRand < 0.85) type = ITEM_TYPES.SHIELD;
-    else if (typeRand < 0.95) type = ITEM_TYPES.SPRING_SHOE;
-    else type = ITEM_TYPES.CLOUD;
+    // level 4-7: 加入 double_score(10%)
+    if (typeRand < 0.60) type = ITEM_TYPES.COIN;
+    else if (typeRand < 0.75) type = ITEM_TYPES.SHIELD;
+    else if (typeRand < 0.85) type = ITEM_TYPES.SPRING_SHOE;
+    else if (typeRand < 0.95) type = ITEM_TYPES.CLOUD;
+    else type = ITEM_TYPES.DOUBLE_SCORE; // 5% 双倍得分
   } else {
-    if (typeRand < 0.55) type = ITEM_TYPES.COIN;
-    else if (typeRand < 0.68) type = ITEM_TYPES.SHIELD;
-    else if (typeRand < 0.78) type = ITEM_TYPES.SPRING_SHOE;
-    else if (typeRand < 0.88) type = ITEM_TYPES.MAGNET;
-    else if (typeRand < 0.96) type = ITEM_TYPES.CLOUD;
-    else type = ITEM_TYPES.COIN; // 额外金币
+    // level > 7: 加入 jetpack(5%), invincible(3%), diamond(7%)
+    if (typeRand < 0.50) type = ITEM_TYPES.COIN;
+    else if (typeRand < 0.62) type = ITEM_TYPES.SHIELD;
+    else if (typeRand < 0.72) type = ITEM_TYPES.SPRING_SHOE;
+    else if (typeRand < 0.82) type = ITEM_TYPES.MAGNET;
+    else if (typeRand < 0.89) type = ITEM_TYPES.CLOUD;
+    else if (typeRand < 0.94) type = ITEM_TYPES.DOUBLE_SCORE;   // 5%
+    else if (typeRand < 0.99) type = ITEM_TYPES.DIAMOND;       // 5%
+    else if (typeRand < 0.996) type = ITEM_TYPES.JETPACK;      // 0.6%
+    else type = ITEM_TYPES.INVINCIBLE;                          // 0.4%
   }
 
   var config = ITEM_CONFIG[type];
@@ -161,7 +175,16 @@ ItemManager.prototype.activateEffect = function(type) {
     case ITEM_TYPES.CLOUD:
       this.activeEffects.cloud = { endTime: now + ITEM_CONFIG.cloud.duration };
       break;
-    // COIN 无持续效果，直接得分
+    case ITEM_TYPES.JETPACK:
+      this.activeEffects.jetpack = { endTime: now + ITEM_CONFIG.jetpack.duration };
+      break;
+    case ITEM_TYPES.DOUBLE_SCORE:
+      this.activeEffects.doubleScore = { endTime: now + ITEM_CONFIG.double_score.duration, multiplier: 2 };
+      break;
+    case ITEM_TYPES.INVINCIBLE:
+      this.activeEffects.invincible = { endTime: now + ITEM_CONFIG.invincible.duration };
+      break;
+    // COIN 和 DIAMOND 无持续效果，直接得分
   }
 };
 
